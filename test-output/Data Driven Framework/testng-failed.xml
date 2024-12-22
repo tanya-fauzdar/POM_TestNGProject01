@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Failed suite [Data Driven Framework]" guice-stage="DEVELOPMENT">
+  <test thread-count="5" name="Find New Car Test(failed)">
+    <classes>
+      <class name="testcases.FindNewCarsTest">
+        <methods>
+          <include name="findNewCars"/>
+          <include name="tearDown"/>
+        </methods>
+      </class> <!-- testcases.FindNewCarsTest -->
+    </classes>
+  </test> <!-- Find New Car Test(failed) -->
+</suite> <!-- Failed suite [Data Driven Framework] -->
