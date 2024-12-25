@@ -36,11 +36,11 @@ public class DataUtil extends BaseTest{
 		 * adjust its behavior based on which test method is currently being executed.
 		 */
 		String sheetName = m.getName();
-		System.out.println("Method/Sheet name is: " + sheetName);
+	//	System.out.println("Method/Sheet name is: " + sheetName);
 		
 		int rowNum = excel.getRowCount(sheetName);
 		int colNum = excel.getColumnCount(sheetName);
-		System.out.println("Row number is:" + rowNum + " Column number is: " + colNum);
+	//	System.out.println("Row number is:" + rowNum + " Column number is: " + colNum);
 		
 		Object[][] data = new Object[rowNum-1][colNum];
 	

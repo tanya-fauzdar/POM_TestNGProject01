@@ -1,10 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<!-- Introduction:
+	In this first suit, we have 2 tests in total :
+	1.Find New Car Test ans 
+	2.Find Car Names and Car Prices   -->
+
 <suite name="Page Object Model Framework">
-<test name="Find New Car Test">
-<classes>
-<class name="testcases.FindNewCarsTest"/>
-</classes>
-</test>
+
+<!-- Test:1 -->
+	<test name="Find New Car Test">
+
+		<classes>	
+			<class name="testcases.FindNewCarsTest"/>
+			<!-- We can add more classes here if needed for this test -->
+		</classes>
+
+	</test> <!-- Test -->
+	
+<!-- Test:2 -->
+	<test name="Find Car Names and Car Prices">
+
+		<classes>
+			<class name="testcases.CarNamesAndCarPricesTest"/>
+			<!-- We can add more classes here if needed for this test -->
+		</classes>
+
+	</test>	<!-- Test2 -->
+
+	
 </suite>
 <!--  Suite  -->

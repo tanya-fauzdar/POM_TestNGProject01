@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="Failed suite [Page Object Model Framework]" guice-stage="DEVELOPMENT">
-  <test thread-count="5" name="Find New Car Test(failed)">
+  <test thread-count="5" name="Find Car Names and Car Prices(failed)">
     <classes>
-      <class name="testcases.FindNewCarsTest">
+      <class name="testcases.CarNamesAndCarPricesTest">
         <methods>
-          <include name="findNewCars" invocation-numbers="0"/>
           <include name="tearDown"/>
+          <include name="findNewCars"/>
         </methods>
-      </class> <!-- testcases.FindNewCarsTest -->
+      </class> <!-- testcases.CarNamesAndCarPricesTest -->
     </classes>
-  </test> <!-- Find New Car Test(failed) -->
+  </test> <!-- Find Car Names and Car Prices(failed) -->
 </suite> <!-- Failed suite [Page Object Model Framework] -->

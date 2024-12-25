@@ -13,7 +13,7 @@ public class BMWCarPage extends BasePage{
 	
 	public String getTitle() {
 		
-		System.out.println("Inside the BMW Cars page");
+		log.info("----Tanya: Inside the BMW Cars page---");
 		return carBase.getCarTitle();
 	}
 

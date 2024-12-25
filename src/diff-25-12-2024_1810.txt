@@ -1,0 +1,2163 @@
+diff --git a/src/main/java/Base/BasePage.java b/src/main/java/Base/BasePage.java
+index db96804..9686061 100644
+--- a/src/main/java/Base/BasePage.java
++++ b/src/main/java/Base/BasePage.java
+@@ -1,20 +1,29 @@
+ package Base;
+ 
++import java.time.Duration;
++
++import org.apache.log4j.Logger;
++import org.apache.log4j.PropertyConfigurator;
+ import org.openqa.selenium.WebDriver;
+ import org.openqa.selenium.support.PageFactory;
++import org.openqa.selenium.support.ui.WebDriverWait;
++
+ 
+ public class BasePage {
+ 	
+ 	
+ 	public WebDriver driver;
++	public WebDriverWait wait;
+ 	public static CarBasePage carBase;
++	public static Logger log = Logger.getLogger(BasePage.class);
+ 	
+ 	
+ 	public BasePage(WebDriver driver) {
+ 		this.driver = driver;
+ 		PageFactory.initElements(driver, this);
+-		
+-		carBase = new CarBasePage(driver);
++		wait = new WebDriverWait(driver, Duration.ofSeconds(5000));
++		PropertyConfigurator.configure("./src/main/resources/properties/log4j.properties");
++		carBase = new CarBasePage(driver, wait);
+ 	}
+ 
+ }
+diff --git a/src/main/java/Base/CarBasePage.java b/src/main/java/Base/CarBasePage.java
+index b7cf39f..1661e18 100644
+--- a/src/main/java/Base/CarBasePage.java
++++ b/src/main/java/Base/CarBasePage.java
+@@ -1,13 +1,18 @@
+ package Base;
+ 
++import java.util.List;
++
+ import org.openqa.selenium.WebDriver;
+ import org.openqa.selenium.WebElement;
+ import org.openqa.selenium.support.FindBy;
+ import org.openqa.selenium.support.PageFactory;
++import org.openqa.selenium.support.ui.ExpectedConditions;
++import org.openqa.selenium.support.ui.WebDriverWait;
+ 
+ public class CarBasePage {
+ 	
+ 	public WebDriver driver;
++	public WebDriverWait wait;
+ 	
+ 	/*
+ 	 * This class is meant for all the common functionalities of
+@@ -15,17 +20,31 @@ public class CarBasePage {
+ 	 * xpaths for their webelements on their respective pages, the methods will be 
+ 	 * implemented in the CarBasePage] 
+ 	 */
+-	public CarBasePage(WebDriver driver) {
++	public CarBasePage(WebDriver driver, WebDriverWait wait) {
+ 		this.driver = driver;
++		this.wait = wait;
+ 		PageFactory.initElements(driver, this);
+ 	}
+ 
+ 	@FindBy(xpath = "//*[@id=\"root\"]/div[2]/div/div/div[2]/section/header/h1")
+ 	public WebElement carTitle;
+-	
+ 	public String getCarTitle() {
+-		//System.out.println("Inside the carBase.getCarTitle() ");
+-		return carTitle.getText();
+ 		
++		return wait.until(ExpectedConditions.elementToBeClickable(carTitle)).getText();
++		
++	}
++	
++	@FindBy(xpath="//div/div/div/div/a/h3")
++	public List <WebElement> carNames;
++	
++	@FindBy(xpath="//div[3]/div/span/span[1]")
++	public List <WebElement> carPrices;
++	
++	public void getCarNamesAndPrices(){
++		//Operating for loop on carprices as the prices are not shown for 'not rated' car models on the page.
++		//so if we take carNames, the array will go out of bound for carprice rates.
++		for(int i = 0; i < carPrices.size()-1; i++) {
++			System.out.println(carNames.get(i).getText() + " Price: " + carPrices.get(i).getText());
++		}
+ 	}
+ }
+diff --git a/src/main/java/pages/BMWCarPage.java b/src/main/java/pages/BMWCarPage.java
+index cbaa3d4..d2bad02 100644
+--- a/src/main/java/pages/BMWCarPage.java
++++ b/src/main/java/pages/BMWCarPage.java
+@@ -13,7 +13,7 @@ public class BMWCarPage extends BasePage{
+ 	
+ 	public String getTitle() {
+ 		
+-		System.out.println("Inside the BMW Cars page");
++		log.info("----Tanya: Inside the BMW Cars page---");
+ 		return carBase.getCarTitle();
+ 	}
+ 
+diff --git a/src/main/java/pages/HomePage.java b/src/main/java/pages/HomePage.java
+index 5748e5e..532af69 100644
+--- a/src/main/java/pages/HomePage.java
++++ b/src/main/java/pages/HomePage.java
+@@ -1,27 +1,19 @@
+ package pages;
+ 
+-import org.openqa.selenium.By;
+ import org.openqa.selenium.WebDriver;
+ import org.openqa.selenium.WebElement;
+ import org.openqa.selenium.interactions.Actions;
+ import org.openqa.selenium.support.FindBy;
+-import org.openqa.selenium.support.PageFactory;
++import org.openqa.selenium.support.ui.ExpectedConditions;
+ 
+ import Base.BasePage;
+ 
+ public class HomePage extends BasePage{
+ 	
+-	/*
+-	 * //creating constructor with webDriver paramter to pass the driver from the
+-	 * tets case class //and use that driver instance public HomePage(WebDriver
+-	 * driver) { this.driver = driver;
+-	 * 
+-	 * }
+-	 */
+ 	
+ 	public HomePage(WebDriver driver) {
+ 		super(driver);
+-		// TODO Auto-generated constructor stub
++		
+ 	}
+ 	
+ 	/*
+@@ -44,30 +36,12 @@ public class HomePage extends BasePage{
+ 		
+ 		Actions act = new Actions(driver);
+ 		
+-		//WebElement menu = driver.findElement(By.xpath("//nav/ul/li[1]/div"));
+-		
+ 		act.moveToElement(newCar).perform();
++
++		wait.until(ExpectedConditions.elementToBeClickable(findNewCar)).click();
+ 		
+-		//driver.findElement(By.xpath("//div[normalize-space()='Find New Cars']")).click();
+-		
+-		findNewCar.click();
+-		
+-		//return PageFactory.initElements(driver, NewCarsPage.class);
+ 		return new NewCarsPage(driver);
+ 	}
+ 	
+-	@FindBy(xpath = "//*[@id=\\\"root\\\"]/div[2]/div[1]/div/div/div/div[2]/div/div[1]/div/div[2]/div/div/div[1]/div/input")
+-	private WebElement searchCar;
+-	
+-	public void searchCars(String carName) {
+-		//the Car name in search bar will be read and sent form the test data excel sheet. we'll no hard code it.
+-		
+-		//driver.findElement(By.xpath("//*[@id=\"root\"]/div[2]/div[1]/div/div/div/div[2]/div/div[1]/div/div[2]/div/div/div[1]/div/input")).sendKeys("carName");
+-		searchCar.sendKeys(carName);
+-	}
+-	
+-	public void verifyFeaturedCars() {
+-		
+-	}
+ 
+ }
+diff --git a/src/main/java/pages/HyundaiCarPage.java b/src/main/java/pages/HyundaiCarPage.java
+index 2328975..2fdb7d0 100644
+--- a/src/main/java/pages/HyundaiCarPage.java
++++ b/src/main/java/pages/HyundaiCarPage.java
+@@ -13,7 +13,7 @@ public class HyundaiCarPage extends BasePage{
+ 	
+ 	public String getTitle() {
+ 		
+-		System.out.println("Inside the Hyundai Cars page");
++		log.info("Inside the Hyundai Cars page");
+ 		return carBase.getCarTitle();
+ 	}
+ }
+diff --git a/src/main/java/pages/NewCarsPage.java b/src/main/java/pages/NewCarsPage.java
+index 7c3f573..0276000 100644
+--- a/src/main/java/pages/NewCarsPage.java
++++ b/src/main/java/pages/NewCarsPage.java
+@@ -1,10 +1,9 @@
+ package pages;
+ 
+-import org.openqa.selenium.By;
+ import org.openqa.selenium.WebDriver;
+ import org.openqa.selenium.WebElement;
+ import org.openqa.selenium.support.FindBy;
+-import org.openqa.selenium.support.PageFactory;
++import org.openqa.selenium.support.ui.ExpectedConditions;
+ 
+ import Base.BasePage;
+ 
+@@ -12,49 +11,67 @@ public class NewCarsPage extends BasePage{
+ 	
+ 	public NewCarsPage(WebDriver driver) {
+ 		super(driver);
+-		// TODO Auto-generated constructor stub
++		
+ 	}
+ 	
+ 	@FindBy (xpath="//img[@title='Toyota Cars']")
+ 	WebElement toyotaCar;
+-	
+ 	public ToyotaCarPage goToToyota() {
+-		//driver.findElement(By.xpath("//img[@title='Toyota Cars']")).click();
+-		toyotaCar.click();
+-		System.out.println("Went to Toyota page");
++
++		wait.until(ExpectedConditions.elementToBeClickable(toyotaCar)).click();
++		log.info("Went to Toyota page");
+ 		carBase.getCarTitle();
+ 		
+-		//return PageFactory.initElements(driver, ToyotaCarPage.class);
+ 		return new ToyotaCarPage(driver);
+ 	}
+ 	
+-	@FindBy (xpath="//img[@title='BMW Cars']")
+-	WebElement bmwCar;	
+-	
++
++	@FindBy (xpath="//div/ul/li[5]/a/div[1]/div/img")
++	WebElement bmwCar;		
+ 	public BMWCarPage goToBMW() {
+ 		
+-		//driver.findElement(By.xpath("//img[@title='BMW Cars']")).click();
+-		bmwCar.click();
+-		System.out.println("Went to BMW page");
++		wait.until(ExpectedConditions.elementToBeClickable(bmwCar)).click();
++		log.info("Went to BMW page");
+ 		
+-		//return PageFactory.initElements(driver, BMWCarPage.class);
+ 		return new BMWCarPage(driver);
+ 		
+ 	}
+ 	
+ 	@FindBy (xpath="//img[@title='Audi Cars']")
+ 	WebElement audiCar;	
+-	
+ 	public AudiCarPage goToAudi() {
+ 		
+-	//	driver.findElement(By.xpath("//img[@title='Audi Cars']")).click();
+-		audiCar.click();
+-		System.out.println("Went to Audi page");
+-		
+-		//return PageFactory.initElements(driver, AudiCarPage.class);
++		wait.until(ExpectedConditions.elementToBeClickable(audiCar)).click();
+ 		
++		log.info("Went to Audi page");
++	
+ 		return new AudiCarPage(driver);
+ 		
+ 	}
++	
++	@FindBy (xpath="//img[@title='Kia Cars']")
++	WebElement kiaCar;	
++	public KiaCarPage goToKia() {
++		
++		wait.until(ExpectedConditions.elementToBeClickable(kiaCar)).click();
++		
++		log.info("Went to Kia page");
++		
++		return new KiaCarPage(driver);
++		
++	}
++	
++	
++	@FindBy (xpath="//img[@title='Hyundai Cars']")
++	WebElement hyundaiCar;	
++	public HyundaiCarPage goToHyundai() {
++		
++		wait.until(ExpectedConditions.elementToBeClickable(hyundaiCar)).click();
++		
++		log.info("Went to Hyundai page");
++		
++		return new HyundaiCarPage(driver);
++		
++	}
+ 
+ }
+diff --git a/src/main/resources/logs/applog.txt b/src/main/resources/logs/applog.txt
+index e69de29..0d2c1df 100644
+--- a/src/main/resources/logs/applog.txt
++++ b/src/main/resources/logs/applog.txt
+@@ -0,0 +1,226 @@
++INFO    2024-12-25 17:37:04,651 [main] testcases.testProperties  - ----Tanya: Went to Audi---
++INFO    2024-12-25 17:37:05,005 [main] testcases.testProperties  - Actual CarTitle is: Audi Cars
++INFO    2024-12-25 17:37:05,234 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:37:05,237 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:48:22,742 [main] Base.BasePage  - Went to Kia page
++INFO    2024-12-25 17:48:22,744 [main] testcases.testProperties  - ----Tanya: Went to Kia---
++INFO    2024-12-25 17:48:23,056 [main] testcases.testProperties  - Actual CarTitle is: Kia Cars
++INFO    2024-12-25 17:48:23,352 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:48:23,360 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:48:23,362 [main] testcases.testProperties  - ----Tanya: Car brand is: toyota---
++INFO    2024-12-25 17:48:27,292 [main] Base.BasePage  - Went to Toyota page
++INFO    2024-12-25 17:48:27,647 [main] testcases.testProperties  - ----Tanya: Went to Toyota---
++INFO    2024-12-25 17:48:27,694 [main] testcases.testProperties  - Actual CarTitle is: Toyota Cars
++INFO    2024-12-25 17:48:27,982 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:48:27,985 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:48:27,987 [main] testcases.testProperties  - ----Tanya: Car brand is: bmw---
++INFO    2024-12-25 17:48:31,899 [main] Base.BasePage  - Went to BMW page
++INFO    2024-12-25 17:48:31,903 [main] testcases.testProperties  - ----Tanya: Went to BMW---
++INFO    2024-12-25 17:48:32,269 [main] testcases.testProperties  - Actual CarTitle is: BMW Cars
++INFO    2024-12-25 17:48:32,536 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:48:32,539 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:48:32,541 [main] testcases.testProperties  - ----Tanya: Car brand is: hyundai---
++INFO    2024-12-25 17:48:36,652 [main] Base.BasePage  - Went to Hyundai page
++INFO    2024-12-25 17:48:36,654 [main] testcases.testProperties  - ----Tanya: Went to Hyundai---
++INFO    2024-12-25 17:48:37,008 [main] testcases.testProperties  - Actual CarTitle is: Hyundai Cars
++INFO    2024-12-25 17:48:37,240 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:48:37,241 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:48:37,241 [main] testcases.testProperties  - ----Tanya: Car brand is: audi---
++INFO    2024-12-25 17:48:40,524 [main] Base.BasePage  - Went to Audi page
++INFO    2024-12-25 17:48:40,527 [main] testcases.testProperties  - ----Tanya: Went to Audi---
++INFO    2024-12-25 17:48:41,039 [main] testcases.testProperties  - Actual CarTitle is: Audi Cars
++INFO    2024-12-25 17:48:41,273 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:48:41,275 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:50:29,957 [main] Base.BasePage  - Went to Kia page
++INFO    2024-12-25 17:50:29,960 [main] testcases.testProperties  - ----Tanya: Went to Kia---
++INFO    2024-12-25 17:50:30,315 [main] testcases.testProperties  - Actual CarTitle is: Kia Cars
++INFO    2024-12-25 17:50:30,549 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:50:30,551 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:50:30,552 [main] testcases.testProperties  - ----Tanya: Car brand is: toyota---
++INFO    2024-12-25 17:50:34,056 [main] Base.BasePage  - Went to Toyota page
++INFO    2024-12-25 17:50:34,410 [main] testcases.testProperties  - ----Tanya: Went to Toyota---
++INFO    2024-12-25 17:50:34,457 [main] testcases.testProperties  - Actual CarTitle is: Toyota Cars
++INFO    2024-12-25 17:50:34,673 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:50:34,675 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:50:34,678 [main] testcases.testProperties  - ----Tanya: Car brand is: bmw---
++INFO    2024-12-25 17:50:38,339 [main] Base.BasePage  - Went to BMW page
++INFO    2024-12-25 17:50:38,341 [main] testcases.testProperties  - ----Tanya: Went to BMW---
++INFO    2024-12-25 17:50:38,715 [main] testcases.testProperties  - Actual CarTitle is: BMW Cars
++INFO    2024-12-25 17:50:38,924 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:50:38,924 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:50:38,924 [main] testcases.testProperties  - ----Tanya: Car brand is: hyundai---
++INFO    2024-12-25 17:50:42,806 [main] Base.BasePage  - Went to Hyundai page
++INFO    2024-12-25 17:50:42,809 [main] testcases.testProperties  - ----Tanya: Went to Hyundai---
++INFO    2024-12-25 17:50:43,121 [main] testcases.testProperties  - Actual CarTitle is: Hyundai Cars
++INFO    2024-12-25 17:50:43,350 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:50:43,353 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:50:43,355 [main] testcases.testProperties  - ----Tanya: Car brand is: audi---
++INFO    2024-12-25 17:50:46,983 [main] Base.BasePage  - Went to Audi page
++INFO    2024-12-25 17:50:46,986 [main] testcases.testProperties  - ----Tanya: Went to Audi---
++INFO    2024-12-25 17:50:47,330 [main] testcases.testProperties  - Actual CarTitle is: Audi Cars
++INFO    2024-12-25 17:50:47,543 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:50:47,544 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:52:33,160 [main] Base.BasePage  - Went to Kia page
++INFO    2024-12-25 17:52:33,162 [main] testcases.testProperties  - ----Tanya: Went to Kia---
++INFO    2024-12-25 17:52:33,506 [main] testcases.testProperties  - Actual CarTitle is: Kia Cars
++INFO    2024-12-25 17:52:33,787 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:52:33,791 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:52:33,792 [main] testcases.testProperties  - ----Tanya: Car brand is: toyota---
++INFO    2024-12-25 17:52:37,011 [main] Base.BasePage  - Went to Toyota page
++INFO    2024-12-25 17:52:37,322 [main] testcases.testProperties  - ----Tanya: Went to Toyota---
++INFO    2024-12-25 17:52:37,371 [main] testcases.testProperties  - Actual CarTitle is: Toyota Cars
++INFO    2024-12-25 17:52:37,595 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:52:37,597 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:52:37,599 [main] testcases.testProperties  - ----Tanya: Car brand is: bmw---
++INFO    2024-12-25 17:52:41,491 [main] Base.BasePage  - Went to BMW page
++INFO    2024-12-25 17:52:41,494 [main] testcases.testProperties  - ----Tanya: Went to BMW---
++INFO    2024-12-25 17:52:41,855 [main] testcases.testProperties  - Actual CarTitle is: BMW Cars
++INFO    2024-12-25 17:52:42,089 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:52:42,091 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:52:42,093 [main] testcases.testProperties  - ----Tanya: Car brand is: hyundai---
++INFO    2024-12-25 17:52:45,463 [main] Base.BasePage  - Went to Hyundai page
++INFO    2024-12-25 17:52:45,466 [main] testcases.testProperties  - ----Tanya: Went to Hyundai---
++INFO    2024-12-25 17:52:45,810 [main] testcases.testProperties  - Actual CarTitle is: Hyundai Cars
++INFO    2024-12-25 17:52:46,071 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:52:46,073 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:52:46,075 [main] testcases.testProperties  - ----Tanya: Car brand is: audi---
++INFO    2024-12-25 17:52:49,429 [main] Base.BasePage  - Went to Audi page
++INFO    2024-12-25 17:52:49,436 [main] testcases.testProperties  - ----Tanya: Went to Audi---
++INFO    2024-12-25 17:52:49,758 [main] testcases.testProperties  - Actual CarTitle is: Audi Cars
++INFO    2024-12-25 17:52:49,987 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:52:49,990 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:52:53,190 [main] testcases.testProperties  - ----Tanya: Car brand is: kia---
++INFO    2024-12-25 17:52:53,190 [main] testcases.testProperties  - ----Tanya: Car names and car prices: 
++INFO    2024-12-25 17:53:03,500 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:53:03,500 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:53:06,505 [main] testcases.testProperties  - ----Tanya: Car brand is: toyota---
++INFO    2024-12-25 17:53:06,821 [main] Base.BasePage  - Went to Toyota page
++INFO    2024-12-25 17:53:07,147 [main] testcases.testProperties  - ----Tanya: Went to Toyota---
++INFO    2024-12-25 17:53:07,147 [main] testcases.testProperties  - ----Tanya: Car names and car prices: 
++INFO    2024-12-25 17:53:07,628 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:53:07,628 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:53:10,697 [main] testcases.testProperties  - ----Tanya: Car brand is: bmw---
++INFO    2024-12-25 17:53:11,004 [main] Base.BasePage  - Went to BMW page
++INFO    2024-12-25 17:53:11,008 [main] testcases.testProperties  - ----Tanya: Went to BMW---
++INFO    2024-12-25 17:53:11,008 [main] testcases.testProperties  - ----Tanya: Car names and car prices: 
++INFO    2024-12-25 17:53:11,901 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:53:11,903 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:53:14,924 [main] testcases.testProperties  - ----Tanya: Car brand is: hyundai---
++INFO    2024-12-25 17:53:14,924 [main] testcases.testProperties  - ----Tanya: Car names and car prices: 
++INFO    2024-12-25 17:53:25,213 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:53:25,215 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:53:28,324 [main] testcases.testProperties  - ----Tanya: Car brand is: audi---
++INFO    2024-12-25 17:53:28,637 [main] Base.BasePage  - Went to Audi page
++INFO    2024-12-25 17:53:28,643 [main] testcases.testProperties  - ----Tanya: Went to Audi---
++INFO    2024-12-25 17:53:28,643 [main] testcases.testProperties  - ----Tanya: Car names and car prices: 
++INFO    2024-12-25 17:53:29,588 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:53:29,588 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:54:50,845 [main] Base.BasePage  - Went to Kia page
++INFO    2024-12-25 17:54:50,849 [main] testcases.testProperties  - ----Tanya: Went to Kia---
++INFO    2024-12-25 17:54:51,180 [main] testcases.testProperties  - Actual CarTitle is: Kia Cars
++INFO    2024-12-25 17:54:51,421 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:54:51,425 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:54:51,428 [main] testcases.testProperties  - ----Tanya: Car brand is: toyota---
++INFO    2024-12-25 17:54:54,634 [main] Base.BasePage  - Went to Toyota page
++INFO    2024-12-25 17:54:54,973 [main] testcases.testProperties  - ----Tanya: Went to Toyota---
++INFO    2024-12-25 17:54:55,019 [main] testcases.testProperties  - Actual CarTitle is: Toyota Cars
++INFO    2024-12-25 17:54:55,249 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:54:55,253 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:54:55,257 [main] testcases.testProperties  - ----Tanya: Car brand is: bmw---
++INFO    2024-12-25 17:54:58,687 [main] Base.BasePage  - Went to BMW page
++INFO    2024-12-25 17:54:58,691 [main] testcases.testProperties  - ----Tanya: Went to BMW---
++INFO    2024-12-25 17:54:59,042 [main] testcases.testProperties  - Actual CarTitle is: BMW Cars
++INFO    2024-12-25 17:54:59,279 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:54:59,282 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:54:59,284 [main] testcases.testProperties  - ----Tanya: Car brand is: hyundai---
++INFO    2024-12-25 17:55:02,322 [main] Base.BasePage  - Went to Hyundai page
++INFO    2024-12-25 17:55:02,324 [main] testcases.testProperties  - ----Tanya: Went to Hyundai---
++INFO    2024-12-25 17:55:02,694 [main] testcases.testProperties  - Actual CarTitle is: Hyundai Cars
++INFO    2024-12-25 17:55:02,974 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:55:02,976 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:55:02,977 [main] testcases.testProperties  - ----Tanya: Car brand is: audi---
++INFO    2024-12-25 17:55:06,258 [main] Base.BasePage  - Went to Audi page
++INFO    2024-12-25 17:55:06,263 [main] testcases.testProperties  - ----Tanya: Went to Audi---
++INFO    2024-12-25 17:55:06,647 [main] testcases.testProperties  - Actual CarTitle is: Audi Cars
++INFO    2024-12-25 17:55:06,869 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:55:06,871 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:55:09,865 [main] testcases.testProperties  - ----Tanya: Car brand is: kia---
++INFO    2024-12-25 17:55:09,866 [main] testcases.testProperties  - ----Tanya: Car names and car prices: 
++INFO    2024-12-25 17:55:20,092 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:55:20,092 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:55:23,016 [main] testcases.testProperties  - ----Tanya: Car brand is: toyota---
++INFO    2024-12-25 17:55:23,318 [main] Base.BasePage  - Went to Toyota page
++INFO    2024-12-25 17:55:23,642 [main] testcases.testProperties  - ----Tanya: Went to Toyota---
++INFO    2024-12-25 17:55:23,642 [main] testcases.testProperties  - ----Tanya: Car names and car prices: 
++INFO    2024-12-25 17:55:24,279 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:55:24,279 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:55:27,469 [main] testcases.testProperties  - ----Tanya: Car brand is: bmw---
++INFO    2024-12-25 17:55:27,740 [main] Base.BasePage  - Went to BMW page
++INFO    2024-12-25 17:55:27,742 [main] testcases.testProperties  - ----Tanya: Went to BMW---
++INFO    2024-12-25 17:55:27,742 [main] testcases.testProperties  - ----Tanya: Car names and car prices: 
++INFO    2024-12-25 17:55:37,998 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:55:37,998 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:55:41,161 [main] testcases.testProperties  - ----Tanya: Car brand is: hyundai---
++INFO    2024-12-25 17:55:41,161 [main] testcases.testProperties  - ----Tanya: Car names and car prices: 
++INFO    2024-12-25 17:55:51,397 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:55:51,397 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:55:54,540 [main] testcases.testProperties  - ----Tanya: Car brand is: audi---
++INFO    2024-12-25 17:55:54,825 [main] Base.BasePage  - Went to Audi page
++INFO    2024-12-25 17:55:54,828 [main] testcases.testProperties  - ----Tanya: Went to Audi---
++INFO    2024-12-25 17:55:54,828 [main] testcases.testProperties  - ----Tanya: Car names and car prices: 
++INFO    2024-12-25 17:55:55,980 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 17:55:55,980 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 18:02:49,428 [main] Base.BasePage  - Went to Kia page
++INFO    2024-12-25 18:02:49,430 [main] testcases.testProperties  - ----Tanya: Went to Kia---
++INFO    2024-12-25 18:02:49,812 [main] testcases.testProperties  - Actual CarTitle is: Kia Cars
++INFO    2024-12-25 18:02:50,046 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 18:02:50,047 [main] testcases.testProperties  - ----Tanya: Car brand is: toyota---
++INFO    2024-12-25 18:02:53,144 [main] Base.BasePage  - Went to Toyota page
++INFO    2024-12-25 18:02:53,495 [main] testcases.testProperties  - ----Tanya: Went to Toyota---
++INFO    2024-12-25 18:02:53,542 [main] testcases.testProperties  - Actual CarTitle is: Toyota Cars
++INFO    2024-12-25 18:02:53,811 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 18:02:53,812 [main] testcases.testProperties  - ----Tanya: Car brand is: bmw---
++INFO    2024-12-25 18:02:58,490 [main] Base.BasePage  - Went to BMW page
++INFO    2024-12-25 18:02:58,504 [main] testcases.testProperties  - ----Tanya: Went to BMW---
++INFO    2024-12-25 18:02:58,854 [main] testcases.testProperties  - Actual CarTitle is: BMW Cars
++INFO    2024-12-25 18:02:59,349 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 18:02:59,350 [main] testcases.testProperties  - ----Tanya: Car brand is: hyundai---
++INFO    2024-12-25 18:03:03,546 [main] Base.BasePage  - Went to Hyundai page
++INFO    2024-12-25 18:03:03,550 [main] testcases.testProperties  - ----Tanya: Went to Hyundai---
++INFO    2024-12-25 18:03:03,898 [main] testcases.testProperties  - Actual CarTitle is: Hyundai Cars
++INFO    2024-12-25 18:03:04,134 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 18:03:04,134 [main] testcases.testProperties  - ----Tanya: Car brand is: audi---
++INFO    2024-12-25 18:03:07,721 [main] Base.BasePage  - Went to Audi page
++INFO    2024-12-25 18:03:07,724 [main] testcases.testProperties  - ----Tanya: Went to Audi---
++INFO    2024-12-25 18:03:08,153 [main] testcases.testProperties  - Actual CarTitle is: Audi Cars
++INFO    2024-12-25 18:03:08,373 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 18:03:11,428 [main] testcases.testProperties  - ----Tanya: Car brand is: kia---
++INFO    2024-12-25 18:03:11,860 [main] Base.BasePage  - Went to Kia page
++INFO    2024-12-25 18:03:11,860 [main] testcases.testProperties  - ----Tanya: Went to Kia---
++INFO    2024-12-25 18:03:11,860 [main] testcases.testProperties  - ----Tanya: Car names and car prices: 
++INFO    2024-12-25 18:03:12,553 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 18:03:12,553 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 18:03:17,198 [main] testcases.testProperties  - ----Tanya: Car brand is: toyota---
++INFO    2024-12-25 18:03:17,496 [main] Base.BasePage  - Went to Toyota page
++INFO    2024-12-25 18:03:17,870 [main] testcases.testProperties  - ----Tanya: Went to Toyota---
++INFO    2024-12-25 18:03:17,871 [main] testcases.testProperties  - ----Tanya: Car names and car prices: 
++INFO    2024-12-25 18:03:18,579 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 18:03:18,579 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 18:03:22,043 [main] testcases.testProperties  - ----Tanya: Car brand is: bmw---
++INFO    2024-12-25 18:03:22,344 [main] Base.BasePage  - Went to BMW page
++INFO    2024-12-25 18:03:22,347 [main] testcases.testProperties  - ----Tanya: Went to BMW---
++INFO    2024-12-25 18:03:22,347 [main] testcases.testProperties  - ----Tanya: Car names and car prices: 
++INFO    2024-12-25 18:03:23,625 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 18:03:23,625 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 18:03:29,368 [main] testcases.testProperties  - ----Tanya: Car brand is: hyundai---
++INFO    2024-12-25 18:03:29,608 [main] Base.BasePage  - Went to Hyundai page
++INFO    2024-12-25 18:03:29,609 [main] testcases.testProperties  - ----Tanya: Went to Hyundai---
++INFO    2024-12-25 18:03:29,609 [main] testcases.testProperties  - ----Tanya: Car names and car prices: 
++INFO    2024-12-25 18:03:30,874 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 18:03:30,874 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 18:07:10,881 [main] testcases.testProperties  - ----Tanya: Car brand is: audi---
++INFO    2024-12-25 18:07:11,207 [main] Base.BasePage  - Went to Audi page
++INFO    2024-12-25 18:07:11,208 [main] testcases.testProperties  - ----Tanya: Went to Audi---
++INFO    2024-12-25 18:07:11,208 [main] testcases.testProperties  - ----Tanya: Car names and car prices: 
++INFO    2024-12-25 18:07:13,147 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 18:07:13,149 [main] testcases.testProperties  - Test Execution completed !!!
+diff --git a/src/main/resources/properties/log4j.properties b/src/main/resources/properties/log4j.properties
+index d2a1c73..edd9567 100644
+--- a/src/main/resources/properties/log4j.properties
++++ b/src/main/resources/properties/log4j.properties
+@@ -3,6 +3,6 @@ log4j.appender.Appender=org.apache.log4j.FileAppender
+ log4j.appender.Appender.File=src/main/resources/logs/applog.txt
+ log4j.appender.Appender.layout=org.apache.log4j.PatternLayout
+ log4j.appender.Appender.layout.ConversionPattern=%-7p %d [%t] %c %x - %m%n
+-log4j.appender.Appender.Append=false
++log4j.appender.Appender.Append=true
+ log4j.appender.file.maxFileSize=5000KB
+ log4j.appender.file.maxBackupIndex=3
+diff --git a/src/test/java/testcases/BaseTest.java b/src/test/java/testcases/BaseTest.java
+index d6dfc3b..a3d528c 100644
+--- a/src/test/java/testcases/BaseTest.java
++++ b/src/test/java/testcases/BaseTest.java
+@@ -22,6 +22,7 @@ import org.openqa.selenium.chrome.ChromeOptions;
+ import org.openqa.selenium.firefox.FirefoxDriver;
+ import org.openqa.selenium.support.ui.WebDriverWait;
+ import org.testng.annotations.AfterMethod;
++import org.testng.annotations.BeforeMethod;
+ 
+ public class BaseTest {
+ 
+@@ -40,7 +41,7 @@ public class BaseTest {
+ 	 * bt.setUp("chrome"); }
+ 	 */
+ 	 
+-
++	@BeforeMethod
+ 	public void setUp(String browser) {
+ 
+ 		PropertyConfigurator.configure("./src/test/resources/properties/log4j.properties");
+@@ -101,17 +102,12 @@ public class BaseTest {
+ 
+ 		wait = new WebDriverWait(driver, Duration.ofSeconds(Integer.parseInt(config.getProperty("explicit.wait"))));
+ 
+-		try {
+-			DbManager.setMysqlDbConnection();
+-			log.info("DB Connection established");
+-		} catch (ClassNotFoundException e) {
+-			// TODO Auto-generated catch block
+-			e.printStackTrace();
+-		} catch (SQLException e) {
+-			// TODO Auto-generated catch block
+-			e.printStackTrace();
+-		}
+-
++		/*
++		 * try { DbManager.setMysqlDbConnection();
++		 * log.info("DB Connection established"); } catch (ClassNotFoundException e) {
++		 * // TODO Auto-generated catch block e.printStackTrace(); } catch (SQLException
++		 * e) { // TODO Auto-generated catch block e.printStackTrace(); }
++		 */
+ 	}
+ 
+ 	@AfterMethod
+diff --git a/src/test/java/testcases/FindNewCarsTest.java b/src/test/java/testcases/FindNewCarsTest.java
+index fd238fc..2161bfb 100644
+--- a/src/test/java/testcases/FindNewCarsTest.java
++++ b/src/test/java/testcases/FindNewCarsTest.java
+@@ -16,38 +16,41 @@ public class FindNewCarsTest extends BaseTest{
+ 	@Test(dataProvider = "dp", dataProviderClass = DataUtil.class)
+ 	public void findNewCars(String browser, String runMode, String carBrand, String carTitle) {
+ 		
++		log.info("----Tanya: Car brand is: "+ carBrand + "---");
++		
+ 		if(runMode.equals("N")){
+ 			//If run mode is 'N' skip the test case
+ 			throw new SkipException("Skipping the test as the run mode is No");
+ 		}
+ 		
+-		setUp(browser);
++		//setUp(browser);
+ 		HomePage home = new HomePage(driver);
+ 		NewCarsPage newCars = home.findNewCars();
+-		//newCars.goToToyota();
+-		//BasePage.carBase.getCarTitle();
+-		System.out.println("Car brand is: "+ carBrand);
+ 		
+ 		if(carBrand.equals("audi")) {
+ 			newCars.goToAudi();
+-			System.out.println("Went to Audi");
++			log.info("----Tanya: Went to Audi---");
+ 		}else if (carBrand.equals("bmw")) {
+ 			newCars.goToBMW();
+-			System.out.println("Went to BMW");
++			log.info("----Tanya: Went to BMW---");
+ 		}else if (carBrand.equals("toyota")) {
+ 			newCars.goToToyota();
+-			System.out.println("TOYOTA");
++			log.info("----Tanya: Went to Toyota---");
++			
+ 		}
+-		System.out.println("Actual CarTitle is: " + BasePage.carBase.getCarTitle());
+-		
+-		Assert.assertEquals(BasePage.carBase.getCarTitle(), carTitle);
+-		try {
+-			Thread.sleep(5000);
+-		} catch (InterruptedException e) {
+-			// TODO Auto-generated catch block
+-			e.printStackTrace();
++		else if (carBrand.equals("kia")) {
++			newCars.goToKia();
++			log.info("----Tanya: Went to Kia---");
++			
+ 		}
++		else if (carBrand.equals("hyundai")) {
++			newCars.goToHyundai();
++			log.info("----Tanya: Went to Hyundai---");
++			
++		}
++		log.info("Actual CarTitle is: " + BasePage.carBase.getCarTitle());
+ 		
++		Assert.assertEquals(BasePage.carBase.getCarTitle(), carTitle);
+ 		
+ 	}
+ 
+diff --git a/src/test/java/utilities/DataUtil.java b/src/test/java/utilities/DataUtil.java
+index 3f3411d..7728f61 100644
+--- a/src/test/java/utilities/DataUtil.java
++++ b/src/test/java/utilities/DataUtil.java
+@@ -36,11 +36,11 @@ public class DataUtil extends BaseTest{
+ 		 * adjust its behavior based on which test method is currently being executed.
+ 		 */
+ 		String sheetName = m.getName();
+-		System.out.println("Method/Sheet name is: " + sheetName);
++	//	System.out.println("Method/Sheet name is: " + sheetName);
+ 		
+ 		int rowNum = excel.getRowCount(sheetName);
+ 		int colNum = excel.getColumnCount(sheetName);
+-		System.out.println("Row number is:" + rowNum + " Column number is: " + colNum);
++	//	System.out.println("Row number is:" + rowNum + " Column number is: " + colNum);
+ 		
+ 		Object[][] data = new Object[rowNum-1][colNum];
+ 	
+diff --git a/src/test/resources/excel/testdata.xlsx b/src/test/resources/excel/testdata.xlsx
+index 48c8d67..daf4ae4 100644
+Binary files a/src/test/resources/excel/testdata.xlsx and b/src/test/resources/excel/testdata.xlsx differ
+diff --git a/src/test/resources/logs/applog.txt b/src/test/resources/logs/applog.txt
+index 1524acd..eda1ce5 100644
+--- a/src/test/resources/logs/applog.txt
++++ b/src/test/resources/logs/applog.txt
+@@ -1,7 +1,5 @@
+-INFO    2024-12-21 19:31:11,099 [main] testcases.testProperties  - Test Execution started !!!
+-INFO    2024-12-21 19:31:11,099 [main] testcases.testProperties  - Config properties file loaded
+-INFO    2024-12-21 19:31:11,100 [main] testcases.testProperties  - OR properties file loaded
+-INFO    2024-12-21 19:31:13,154 [main] testcases.testProperties  - Chrome browser launched
+-INFO    2024-12-21 19:31:15,512 [main] testcases.testProperties  - Navigated to : https://www.carwale.com/
+-INFO    2024-12-21 19:31:15,827 [main] testcases.testProperties  - DB Connection established
+-INFO    2024-12-21 19:31:26,482 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 18:03:30,876 [main] testcases.testProperties  - Test Execution started !!!
++INFO    2024-12-25 18:03:30,877 [main] testcases.testProperties  - Config properties file loaded
++INFO    2024-12-25 18:03:30,877 [main] testcases.testProperties  - OR properties file loaded
++INFO    2024-12-25 18:03:32,741 [main] testcases.testProperties  - Chrome browser launched
++INFO    2024-12-25 18:03:34,648 [main] testcases.testProperties  - Navigated to : https://www.carwale.com/
+diff --git a/src/test/resources/runner/testng.xml b/src/test/resources/runner/testng.xml
+index acb07b5..fd0b72c 100644
+--- a/src/test/resources/runner/testng.xml
++++ b/src/test/resources/runner/testng.xml
+@@ -1,10 +1,33 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
++
++<!-- Introduction:
++	In this first suit, we have 2 tests in total :
++	1.Find New Car Test ans 
++	2.Find Car Names and Car Prices   -->
++
+ <suite name="Page Object Model Framework">
+-<test name="Find New Car Test">
+-<classes>
+-<class name="testcases.FindNewCarsTest"/>
+-</classes>
+-</test>
++
++<!-- Test:1 -->
++	<test name="Find New Car Test">
++
++		<classes>	
++			<class name="testcases.FindNewCarsTest"/>
++			<!-- We can add more classes here if needed for this test -->
++		</classes>
++
++	</test> <!-- Test -->
++	
++<!-- Test:2 -->
++	<test name="Find Car Names and Car Prices">
++
++		<classes>
++			<class name="testcases.CarNamesAndCarPricesTest"/>
++			<!-- We can add more classes here if needed for this test -->
++		</classes>
++
++	</test>	<!-- Test2 -->
++
++	
+ </suite>
+-<!--  Suite  -->
+\ No newline at end of file
++<!--  Suite  -->
+diff --git a/target/classes/Base/BasePage.class b/target/classes/Base/BasePage.class
+index df8f54b..9f48cf1 100644
+Binary files a/target/classes/Base/BasePage.class and b/target/classes/Base/BasePage.class differ
+diff --git a/target/classes/Base/CarBasePage.class b/target/classes/Base/CarBasePage.class
+index 1d14e06..de21519 100644
+Binary files a/target/classes/Base/CarBasePage.class and b/target/classes/Base/CarBasePage.class differ
+diff --git a/target/classes/pages/BMWCarPage.class b/target/classes/pages/BMWCarPage.class
+index 9561b18..c99de88 100644
+Binary files a/target/classes/pages/BMWCarPage.class and b/target/classes/pages/BMWCarPage.class differ
+diff --git a/target/classes/pages/HomePage.class b/target/classes/pages/HomePage.class
+index a672023..b5a06b3 100644
+Binary files a/target/classes/pages/HomePage.class and b/target/classes/pages/HomePage.class differ
+diff --git a/target/classes/pages/HyundaiCarPage.class b/target/classes/pages/HyundaiCarPage.class
+index ea63965..b070d44 100644
+Binary files a/target/classes/pages/HyundaiCarPage.class and b/target/classes/pages/HyundaiCarPage.class differ
+diff --git a/target/classes/pages/NewCarsPage.class b/target/classes/pages/NewCarsPage.class
+index 9f8cc45..e3e8697 100644
+Binary files a/target/classes/pages/NewCarsPage.class and b/target/classes/pages/NewCarsPage.class differ
+diff --git a/target/test-classes/excel/testdata.xlsx b/target/test-classes/excel/testdata.xlsx
+index 48c8d67..daf4ae4 100644
+Binary files a/target/test-classes/excel/testdata.xlsx and b/target/test-classes/excel/testdata.xlsx differ
+diff --git a/target/test-classes/logs/applog.txt b/target/test-classes/logs/applog.txt
+index 1524acd..eda1ce5 100644
+--- a/target/test-classes/logs/applog.txt
++++ b/target/test-classes/logs/applog.txt
+@@ -1,7 +1,5 @@
+-INFO    2024-12-21 19:31:11,099 [main] testcases.testProperties  - Test Execution started !!!
+-INFO    2024-12-21 19:31:11,099 [main] testcases.testProperties  - Config properties file loaded
+-INFO    2024-12-21 19:31:11,100 [main] testcases.testProperties  - OR properties file loaded
+-INFO    2024-12-21 19:31:13,154 [main] testcases.testProperties  - Chrome browser launched
+-INFO    2024-12-21 19:31:15,512 [main] testcases.testProperties  - Navigated to : https://www.carwale.com/
+-INFO    2024-12-21 19:31:15,827 [main] testcases.testProperties  - DB Connection established
+-INFO    2024-12-21 19:31:26,482 [main] testcases.testProperties  - Test Execution completed !!!
++INFO    2024-12-25 18:03:30,876 [main] testcases.testProperties  - Test Execution started !!!
++INFO    2024-12-25 18:03:30,877 [main] testcases.testProperties  - Config properties file loaded
++INFO    2024-12-25 18:03:30,877 [main] testcases.testProperties  - OR properties file loaded
++INFO    2024-12-25 18:03:32,741 [main] testcases.testProperties  - Chrome browser launched
++INFO    2024-12-25 18:03:34,648 [main] testcases.testProperties  - Navigated to : https://www.carwale.com/
+diff --git a/target/test-classes/runner/testng.xml b/target/test-classes/runner/testng.xml
+index acb07b5..fd0b72c 100644
+--- a/target/test-classes/runner/testng.xml
++++ b/target/test-classes/runner/testng.xml
+@@ -1,10 +1,33 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
++
++<!-- Introduction:
++	In this first suit, we have 2 tests in total :
++	1.Find New Car Test ans 
++	2.Find Car Names and Car Prices   -->
++
+ <suite name="Page Object Model Framework">
+-<test name="Find New Car Test">
+-<classes>
+-<class name="testcases.FindNewCarsTest"/>
+-</classes>
+-</test>
++
++<!-- Test:1 -->
++	<test name="Find New Car Test">
++
++		<classes>	
++			<class name="testcases.FindNewCarsTest"/>
++			<!-- We can add more classes here if needed for this test -->
++		</classes>
++
++	</test> <!-- Test -->
++	
++<!-- Test:2 -->
++	<test name="Find Car Names and Car Prices">
++
++		<classes>
++			<class name="testcases.CarNamesAndCarPricesTest"/>
++			<!-- We can add more classes here if needed for this test -->
++		</classes>
++
++	</test>	<!-- Test2 -->
++
++	
+ </suite>
+-<!--  Suite  -->
+\ No newline at end of file
++<!--  Suite  -->
+diff --git a/target/test-classes/testcases/BaseTest.class b/target/test-classes/testcases/BaseTest.class
+index c37fcd9..cb007ce 100644
+Binary files a/target/test-classes/testcases/BaseTest.class and b/target/test-classes/testcases/BaseTest.class differ
+diff --git a/target/test-classes/testcases/FindNewCarsTest.class b/target/test-classes/testcases/FindNewCarsTest.class
+index 82069dc..29e2a82 100644
+Binary files a/target/test-classes/testcases/FindNewCarsTest.class and b/target/test-classes/testcases/FindNewCarsTest.class differ
+diff --git a/target/test-classes/utilities/DataUtil.class b/target/test-classes/utilities/DataUtil.class
+index 0938779..23ee0ee 100644
+Binary files a/target/test-classes/utilities/DataUtil.class and b/target/test-classes/utilities/DataUtil.class differ
+diff --git a/test-output/Page Object Model Framework/Find New Car Test.html b/test-output/Page Object Model Framework/Find New Car Test.html
+index 122d122..0e959ca 100644
+--- a/test-output/Page Object Model Framework/Find New Car Test.html	
++++ b/test-output/Page Object Model Framework/Find New Car Test.html	
+@@ -55,11 +55,11 @@ function toggleAllBoxes() {
+ <body>
+ <h2 align='center'>Find New Car Test</h2><table border='1' align="center">
+ <tr>
+-<td>Tests passed/Failed/Skipped:</td><td>0/1/0</td>
++<td>Tests passed/Failed/Skipped:</td><td>5/0/0</td>
+ </tr><tr>
+-<td>Started on:</td><td>Sat Dec 21 19:31:10 IST 2024</td>
++<td>Started on:</td><td>Wed Dec 25 18:02:44 IST 2024</td>
+ </tr>
+-<tr><td>Total time:</td><td>15 seconds (15491 ms)</td>
++<tr><td>Total time:</td><td>23 seconds (23392 ms)</td>
+ </tr><tr>
+ <td>Included groups:</td><td></td>
+ </tr><tr>
+@@ -67,8 +67,8 @@ function toggleAllBoxes() {
+ </tr>
+ </table><p/>
+ <small><i>(Hover the method name to see the test class name)</i></small><p/>
+-<table width='100%' border='1' class='invocation-failed'>
+-<tr><td colspan='4' align='center'><b>FAILED TESTS</b></td></tr>
++<table width='100%' border='1' class='invocation-passed'>
++<tr><td colspan='4' align='center'><b>PASSED TESTS</b></td></tr>
+ <tr><td><b>Test method</b></td>
+ <td width="30%"><b>Exception</b></td>
+ <td width="10%"><b>Time (seconds)</b></td>
+@@ -76,86 +76,29 @@ function toggleAllBoxes() {
+ </tr>
+ <tr>
+ <td title='testcases.FindNewCarsTest.findNewCars()'><b>findNewCars</b><br>Test class: testcases.FindNewCarsTest<br>Parameters: chrome, Y, kia, Kia Cars</td>
+-<td><div><pre>org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;//*[@id=&quot;root&quot;]/div[2]/div/div/div[2]/section/header/h1&quot;}
+-  (Session info: chrome=131.0.6778.205)
+-For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+-Build info: version: &apos;4.13.0&apos;, revision: &apos;ba948ece5b*&apos;
+-System info: os.name: &apos;Windows 11&apos;, os.arch: &apos;amd64&apos;, os.version: &apos;10.0&apos;, java.version: &apos;18&apos;
+-Driver info: org.openqa.selenium.chrome.ChromeDriver
+-Command: [e33101bfd5632194ad0acca08224cfdc, findElement {using=xpath, value=//*[@id=&quot;root&quot;]/div[2]/div/div/div[2]/section/header/h1}]
+-Capabilities {acceptInsecureCerts: false, browserName: chrome, browserVersion: 131.0.6778.205, chrome: {chromedriverVersion: 131.0.6778.204 (52183f9e99a..., userDataDir: C:\Users\TANYAF~1\AppData\L...}, fedcm:accounts: true, goog:chromeOptions: {debuggerAddress: localhost:54789}, networkConnectionEnabled: false, pageLoadStrategy: normal, platformName: windows, proxy: Proxy(), se:cdp: ws://localhost:54789/devtoo..., se:cdpVersion: 131.0.6778.205, setWindowRect: true, strictFileInteractability: false, timeouts: {implicit: 0, pageLoad: 300000, script: 30000}, unhandledPromptBehavior: dismiss and notify, webauthn:extension:credBlob: true, webauthn:extension:largeBlob: true, webauthn:extension:minPinLength: true, webauthn:extension:prf: true, webauthn:virtualAuthenticators: true}
+-Session ID: e33101bfd5632194ad0acca08224cfdc
+-	at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.createException(W3CHttpResponseCodec.java:200)
+-	at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.decode(W3CHttpResponseCodec.java:133)
+-	at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.decode(W3CHttpResponseCodec.java:52)
+-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:191)
+-	at org.openqa.selenium.remote.service.DriverCommandExecutor.invokeExecute(DriverCommandExecutor.java:196)
+-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:171)
+-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:602)
+-	at org.openqa.selenium.remote.ElementLocation$ElementFinder$2.findElement(ElementLocation.java:165)
+-	at org.openqa.selenium.remote.ElementLocation.findElement(ElementLocation.java:59)
+-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:359)
+-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:353)
+-	at org.openqa.selenium.support.pagefactory.DefaultElementLocator.findElement(DefaultElementLocator.java:68)
+-	at org.openqa.selenium.support.pagefactory.internal.LocatingElementHandler.invoke(LocatingElementHandler.java:38)
+-	at jdk.proxy2/jdk.proxy2.$Proxy16.getText(Unknown Source)
+-	at Base.CarBasePage.getCarTitle(CarBasePage.java:28)
+-	at testcases.FindNewCarsTest.findNewCars(FindNewCarsTest.java:41)
+-... Removed 26 stack frames</pre></div><a href='#' onClick='toggleBox("stack-trace1948689480", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+-<div class='stack-trace' id='stack-trace1948689480'><pre>org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;//*[@id=&quot;root&quot;]/div[2]/div/div/div[2]/section/header/h1&quot;}
+-  (Session info: chrome=131.0.6778.205)
+-For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+-Build info: version: &apos;4.13.0&apos;, revision: &apos;ba948ece5b*&apos;
+-System info: os.name: &apos;Windows 11&apos;, os.arch: &apos;amd64&apos;, os.version: &apos;10.0&apos;, java.version: &apos;18&apos;
+-Driver info: org.openqa.selenium.chrome.ChromeDriver
+-Command: [e33101bfd5632194ad0acca08224cfdc, findElement {using=xpath, value=//*[@id=&quot;root&quot;]/div[2]/div/div/div[2]/section/header/h1}]
+-Capabilities {acceptInsecureCerts: false, browserName: chrome, browserVersion: 131.0.6778.205, chrome: {chromedriverVersion: 131.0.6778.204 (52183f9e99a..., userDataDir: C:\Users\TANYAF~1\AppData\L...}, fedcm:accounts: true, goog:chromeOptions: {debuggerAddress: localhost:54789}, networkConnectionEnabled: false, pageLoadStrategy: normal, platformName: windows, proxy: Proxy(), se:cdp: ws://localhost:54789/devtoo..., se:cdpVersion: 131.0.6778.205, setWindowRect: true, strictFileInteractability: false, timeouts: {implicit: 0, pageLoad: 300000, script: 30000}, unhandledPromptBehavior: dismiss and notify, webauthn:extension:credBlob: true, webauthn:extension:largeBlob: true, webauthn:extension:minPinLength: true, webauthn:extension:prf: true, webauthn:virtualAuthenticators: true}
+-Session ID: e33101bfd5632194ad0acca08224cfdc
+-	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(DirectConstructorHandleAccessor.java:67)
+-	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:499)
+-	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:483)
+-	at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.createException(W3CHttpResponseCodec.java:200)
+-	at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.decode(W3CHttpResponseCodec.java:133)
+-	at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.decode(W3CHttpResponseCodec.java:52)
+-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:191)
+-	at org.openqa.selenium.remote.service.DriverCommandExecutor.invokeExecute(DriverCommandExecutor.java:196)
+-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:171)
+-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:602)
+-	at org.openqa.selenium.remote.ElementLocation$ElementFinder$2.findElement(ElementLocation.java:165)
+-	at org.openqa.selenium.remote.ElementLocation.findElement(ElementLocation.java:59)
+-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:359)
+-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:353)
+-	at org.openqa.selenium.support.pagefactory.DefaultElementLocator.findElement(DefaultElementLocator.java:68)
+-	at org.openqa.selenium.support.pagefactory.internal.LocatingElementHandler.invoke(LocatingElementHandler.java:38)
+-	at jdk.proxy2/jdk.proxy2.$Proxy16.getText(Unknown Source)
+-	at Base.CarBasePage.getCarTitle(CarBasePage.java:28)
+-	at testcases.FindNewCarsTest.findNewCars(FindNewCarsTest.java:41)
+-	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+-	at java.base/java.lang.reflect.Method.invoke(Method.java:577)
+-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:124)
+-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:583)
+-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:719)
+-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:989)
+-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:125)
+-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+-	at org.testng.TestRunner.privateRun(TestRunner.java:648)
+-	at org.testng.TestRunner.run(TestRunner.java:505)
+-	at org.testng.SuiteRunner.runTest(SuiteRunner.java:455)
+-	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:450)
+-	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:415)
+-	at org.testng.SuiteRunner.run(SuiteRunner.java:364)
+-	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+-	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:84)
+-	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1208)
+-	at org.testng.TestNG.runSuitesLocally(TestNG.java:1137)
+-	at org.testng.TestNG.runSuites(TestNG.java:1049)
+-	at org.testng.TestNG.run(TestNG.java:1017)
+-	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:115)
+-	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:251)
+-	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:77)
+-</pre></div></td>
+-<td>15</td>
+-<td>testcases.FindNewCarsTest@1ef3efa8</td></tr>
++<td></td>
++<td>4</td>
++<td>testcases.FindNewCarsTest@47605f2f</td></tr>
++<tr>
++<td title='testcases.FindNewCarsTest.findNewCars()'><b>findNewCars</b><br>Test class: testcases.FindNewCarsTest<br>Parameters: chrome, Y, toyota, Toyota Cars</td>
++<td></td>
++<td>3</td>
++<td>testcases.FindNewCarsTest@47605f2f</td></tr>
++<tr>
++<td title='testcases.FindNewCarsTest.findNewCars()'><b>findNewCars</b><br>Test class: testcases.FindNewCarsTest<br>Parameters: chrome, Y, bmw, BMW Cars</td>
++<td></td>
++<td>5</td>
++<td>testcases.FindNewCarsTest@47605f2f</td></tr>
++<tr>
++<td title='testcases.FindNewCarsTest.findNewCars()'><b>findNewCars</b><br>Test class: testcases.FindNewCarsTest<br>Parameters: chrome, Y, hyundai, Hyundai Cars</td>
++<td></td>
++<td>4</td>
++<td>testcases.FindNewCarsTest@47605f2f</td></tr>
++<tr>
++<td title='testcases.FindNewCarsTest.findNewCars()'><b>findNewCars</b><br>Test class: testcases.FindNewCarsTest<br>Parameters: chrome, Y, audi, Audi Cars</td>
++<td></td>
++<td>4</td>
++<td>testcases.FindNewCarsTest@47605f2f</td></tr>
+ </table><p>
+ </body>
+ </html>
+\ No newline at end of file
+diff --git a/test-output/Page Object Model Framework/Find New Car Test.xml b/test-output/Page Object Model Framework/Find New Car Test.xml
+index 2d066f1..faf912a 100644
+--- a/test-output/Page Object Model Framework/Find New Car Test.xml	
++++ b/test-output/Page Object Model Framework/Find New Car Test.xml	
+@@ -1,42 +1,9 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <!-- Generated by org.testng.reporters.JUnitXMLReporter -->
+-<testsuite ignored="0" hostname="LAPTOP-5ONM4F1J" failures="1" tests="1" name="Find New Car Test" time="15.491" errors="0" timestamp="21 Dec 2024 14:01:26 GMT">
+-  <testcase classname="testcases.FindNewCarsTest" name="findNewCars" time="15.188">
+-    <failure type="org.openqa.selenium.NoSuchElementException" message="no such element: Unable to locate element: {&amp;quot;method&amp;quot;:&amp;quot;xpath&amp;quot;,&amp;quot;selector&amp;quot;:&amp;quot;//*[@id=&amp;quot;root&amp;quot;]/div[2]/div/div/div[2]/section/header/h1&amp;quot;}
+-  (Session info: chrome=131.0.6778.205)
+-For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+-Build info: version: &amp;apos;4.13.0&amp;apos;, revision: &amp;apos;ba948ece5b*&amp;apos;
+-System info: os.name: &amp;apos;Windows 11&amp;apos;, os.arch: &amp;apos;amd64&amp;apos;, os.version: &amp;apos;10.0&amp;apos;, java.version: &amp;apos;18&amp;apos;
+-Driver info: org.openqa.selenium.chrome.ChromeDriver
+-Command: [e33101bfd5632194ad0acca08224cfdc, findElement {using=xpath, value=//*[@id=&amp;quot;root&amp;quot;]/div[2]/div/div/div[2]/section/header/h1}]
+-Capabilities {acceptInsecureCerts: false, browserName: chrome, browserVersion: 131.0.6778.205, chrome: {chromedriverVersion: 131.0.6778.204 (52183f9e99a..., userDataDir: C:\Users\TANYAF~1\AppData\L...}, fedcm:accounts: true, goog:chromeOptions: {debuggerAddress: localhost:54789}, networkConnectionEnabled: false, pageLoadStrategy: normal, platformName: windows, proxy: Proxy(), se:cdp: ws://localhost:54789/devtoo..., se:cdpVersion: 131.0.6778.205, setWindowRect: true, strictFileInteractability: false, timeouts: {implicit: 0, pageLoad: 300000, script: 30000}, unhandledPromptBehavior: dismiss and notify, webauthn:extension:credBlob: true, webauthn:extension:largeBlob: true, webauthn:extension:minPinLength: true, webauthn:extension:prf: true, webauthn:virtualAuthenticators: true}
+-Session ID: e33101bfd5632194ad0acca08224cfdc">
+-      <![CDATA[org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {"method":"xpath","selector":"//*[@id="root"]/div[2]/div/div/div[2]/section/header/h1"}
+-  (Session info: chrome=131.0.6778.205)
+-For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+-Build info: version: '4.13.0', revision: 'ba948ece5b*'
+-System info: os.name: 'Windows 11', os.arch: 'amd64', os.version: '10.0', java.version: '18'
+-Driver info: org.openqa.selenium.chrome.ChromeDriver
+-Command: [e33101bfd5632194ad0acca08224cfdc, findElement {using=xpath, value=//*[@id="root"]/div[2]/div/div/div[2]/section/header/h1}]
+-Capabilities {acceptInsecureCerts: false, browserName: chrome, browserVersion: 131.0.6778.205, chrome: {chromedriverVersion: 131.0.6778.204 (52183f9e99a..., userDataDir: C:\Users\TANYAF~1\AppData\L...}, fedcm:accounts: true, goog:chromeOptions: {debuggerAddress: localhost:54789}, networkConnectionEnabled: false, pageLoadStrategy: normal, platformName: windows, proxy: Proxy(), se:cdp: ws://localhost:54789/devtoo..., se:cdpVersion: 131.0.6778.205, setWindowRect: true, strictFileInteractability: false, timeouts: {implicit: 0, pageLoad: 300000, script: 30000}, unhandledPromptBehavior: dismiss and notify, webauthn:extension:credBlob: true, webauthn:extension:largeBlob: true, webauthn:extension:minPinLength: true, webauthn:extension:prf: true, webauthn:virtualAuthenticators: true}
+-Session ID: e33101bfd5632194ad0acca08224cfdc
+-at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.createException(W3CHttpResponseCodec.java:200)
+-at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.decode(W3CHttpResponseCodec.java:133)
+-at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.decode(W3CHttpResponseCodec.java:52)
+-at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:191)
+-at org.openqa.selenium.remote.service.DriverCommandExecutor.invokeExecute(DriverCommandExecutor.java:196)
+-at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:171)
+-at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:602)
+-at org.openqa.selenium.remote.ElementLocation$ElementFinder$2.findElement(ElementLocation.java:165)
+-at org.openqa.selenium.remote.ElementLocation.findElement(ElementLocation.java:59)
+-at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:359)
+-at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:353)
+-at org.openqa.selenium.support.pagefactory.DefaultElementLocator.findElement(DefaultElementLocator.java:68)
+-at org.openqa.selenium.support.pagefactory.internal.LocatingElementHandler.invoke(LocatingElementHandler.java:38)
+-at jdk.proxy2/jdk.proxy2.$Proxy16.getText(Unknown Source)
+-at Base.CarBasePage.getCarTitle(CarBasePage.java:28)
+-at testcases.FindNewCarsTest.findNewCars(FindNewCarsTest.java:41)
+-... Removed 26 stack frames]]>
+-    </failure>
+-  </testcase> <!-- findNewCars -->
++<testsuite ignored="0" hostname="LAPTOP-5ONM4F1J" failures="0" tests="5" name="Find New Car Test" time="23.392" errors="0" timestamp="25 Dec 2024 12:33:08 GMT">
++  <testcase classname="testcases.FindNewCarsTest" name="findNewCars" time="4.817"/>
++  <testcase classname="testcases.FindNewCarsTest" name="findNewCars" time="3.542"/>
++  <testcase classname="testcases.FindNewCarsTest" name="findNewCars" time="5.109"/>
++  <testcase classname="testcases.FindNewCarsTest" name="findNewCars" time="4.592"/>
++  <testcase classname="testcases.FindNewCarsTest" name="findNewCars" time="4.063"/>
+ </testsuite> <!-- Find New Car Test -->
+diff --git a/test-output/Page Object Model Framework/testng-failed.xml b/test-output/Page Object Model Framework/testng-failed.xml
+index 6898882..eba9a72 100644
+--- a/test-output/Page Object Model Framework/testng-failed.xml	
++++ b/test-output/Page Object Model Framework/testng-failed.xml	
+@@ -1,14 +1,14 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+ <suite name="Failed suite [Page Object Model Framework]" guice-stage="DEVELOPMENT">
+-  <test thread-count="5" name="Find New Car Test(failed)">
++  <test thread-count="5" name="Find Car Names and Car Prices(failed)">
+     <classes>
+-      <class name="testcases.FindNewCarsTest">
++      <class name="testcases.CarNamesAndCarPricesTest">
+         <methods>
+-          <include name="findNewCars" invocation-numbers="0"/>
+           <include name="tearDown"/>
++          <include name="findNewCars"/>
+         </methods>
+-      </class> <!-- testcases.FindNewCarsTest -->
++      </class> <!-- testcases.CarNamesAndCarPricesTest -->
+     </classes>
+-  </test> <!-- Find New Car Test(failed) -->
++  </test> <!-- Find Car Names and Car Prices(failed) -->
+ </suite> <!-- Failed suite [Page Object Model Framework] -->
+diff --git a/test-output/emailable-report.html b/test-output/emailable-report.html
+index 19b027a..d6ec076 100644
+--- a/test-output/emailable-report.html
++++ b/test-output/emailable-report.html
+@@ -9,35 +9,22 @@
+ <table>
+ <tr><th>Test</th><th># Passed</th><th># Skipped</th><th># Failed</th><th>Time (ms)</th><th>Included Groups</th><th>Excluded Groups</th></tr>
+ <tr><th colspan="7">Page Object Model Framework</th></tr>
+-<tr><td><a href="#t0">Find New Car Test</a></td><td class="num">0</td><td class="num">0</td><td class="num attn">1</td><td class="num">15,491</td><td></td><td></td></tr>
++<tr><td><a href="#t0">Find New Car Test</a></td><td class="num">5</td><td class="num">0</td><td class="num">0</td><td class="num">23,392</td><td></td><td></td></tr>
++<tr class="stripe"><td><a href="#t1">Find Car Names and Car Prices</a></td><td class="num">5</td><td class="num">0</td><td class="num">0</td><td class="num">244,760</td><td></td><td></td></tr>
++<tr><th>Total</th><th class="num">10</th><th class="num">0</th><th class="num">0</th><th class="num">268,152</th><th colspan="2"></th></tr>
+ </table>
+-<table id='summary'><thead><tr><th>Class</th><th>Method</th><th>Start</th><th>Time (ms)</th></tr></thead><tbody><tr><th colspan="4">Page Object Model Framework</th></tr></tbody><tbody id="t0"><tr><th colspan="4">Find New Car Test &#8212; failed</th></tr><tr class="failedeven"><td rowspan="1">testcases.FindNewCarsTest</td><td><a href="#m0">findNewCars</a></td><td rowspan="1">1734789671057</td><td rowspan="1">15188</td></tr></tbody>
++<table id='summary'><thead><tr><th>Class</th><th>Method</th><th>Start</th><th>Time (ms)</th></tr></thead><tbody><tr><th colspan="4">Page Object Model Framework</th></tr></tbody><tbody id="t0"><tr><th colspan="4">Find New Car Test &#8212; passed</th></tr><tr class="passedeven"><td rowspan="5">testcases.FindNewCarsTest</td><td><a href="#m0">findNewCars</a></td><td rowspan="5">1735129973811</td><td rowspan="5">5109</td></tr><tr class="passedeven"><td><a href="#m1">findNewCars</a></td></tr><tr class="passedeven"><td><a href="#m2">findNewCars</a></td></tr><tr class="passedeven"><td><a href="#m3">findNewCars</a></td></tr><tr class="passedeven"><td><a href="#m4">findNewCars</a></td></tr></tbody>
++<tbody id="t1"><tr><th colspan="4">Find Car Names and Car Prices &#8212; passed</th></tr><tr class="passedeven"><td rowspan="5">testcases.CarNamesAndCarPricesTest</td><td><a href="#m5">carNamesAndCarPricesTest</a></td><td rowspan="5">1735129998579</td><td rowspan="5">5046</td></tr><tr class="passedeven"><td><a href="#m6">carNamesAndCarPricesTest</a></td></tr><tr class="passedeven"><td><a href="#m7">carNamesAndCarPricesTest</a></td></tr><tr class="passedeven"><td><a href="#m8">carNamesAndCarPricesTest</a></td></tr><tr class="passedeven"><td><a href="#m9">carNamesAndCarPricesTest</a></td></tr></tbody>
+ </table>
+-<h2>Find New Car Test</h2><h3 id="m0">testcases.FindNewCarsTest#findNewCars</h3><table class="result"><tr class="param"><th>Parameter #1</th><th>Parameter #2</th><th>Parameter #3</th><th>Parameter #4</th></tr><tr class="param stripe"><td>chrome</td><td>Y</td><td>kia</td><td>Kia Cars</td></tr><tr><th colspan="4">Exception</th></tr><tr><td colspan="4"><div class="stacktrace">org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;//*[@id=&quot;root&quot;]/div[2]/div/div/div[2]/section/header/h1&quot;}
+-  (Session info: chrome=131.0.6778.205)
+-For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+-Build info: version: &apos;4.13.0&apos;, revision: &apos;ba948ece5b*&apos;
+-System info: os.name: &apos;Windows 11&apos;, os.arch: &apos;amd64&apos;, os.version: &apos;10.0&apos;, java.version: &apos;18&apos;
+-Driver info: org.openqa.selenium.chrome.ChromeDriver
+-Command: [e33101bfd5632194ad0acca08224cfdc, findElement {using=xpath, value=//*[@id=&quot;root&quot;]/div[2]/div/div/div[2]/section/header/h1}]
+-Capabilities {acceptInsecureCerts: false, browserName: chrome, browserVersion: 131.0.6778.205, chrome: {chromedriverVersion: 131.0.6778.204 (52183f9e99a..., userDataDir: C:\Users\TANYAF~1\AppData\L...}, fedcm:accounts: true, goog:chromeOptions: {debuggerAddress: localhost:54789}, networkConnectionEnabled: false, pageLoadStrategy: normal, platformName: windows, proxy: Proxy(), se:cdp: ws://localhost:54789/devtoo..., se:cdpVersion: 131.0.6778.205, setWindowRect: true, strictFileInteractability: false, timeouts: {implicit: 0, pageLoad: 300000, script: 30000}, unhandledPromptBehavior: dismiss and notify, webauthn:extension:credBlob: true, webauthn:extension:largeBlob: true, webauthn:extension:minPinLength: true, webauthn:extension:prf: true, webauthn:virtualAuthenticators: true}
+-Session ID: e33101bfd5632194ad0acca08224cfdc
+-	at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.createException(W3CHttpResponseCodec.java:200)
+-	at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.decode(W3CHttpResponseCodec.java:133)
+-	at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.decode(W3CHttpResponseCodec.java:52)
+-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:191)
+-	at org.openqa.selenium.remote.service.DriverCommandExecutor.invokeExecute(DriverCommandExecutor.java:196)
+-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:171)
+-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:602)
+-	at org.openqa.selenium.remote.ElementLocation$ElementFinder$2.findElement(ElementLocation.java:165)
+-	at org.openqa.selenium.remote.ElementLocation.findElement(ElementLocation.java:59)
+-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:359)
+-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:353)
+-	at org.openqa.selenium.support.pagefactory.DefaultElementLocator.findElement(DefaultElementLocator.java:68)
+-	at org.openqa.selenium.support.pagefactory.internal.LocatingElementHandler.invoke(LocatingElementHandler.java:38)
+-	at jdk.proxy2/jdk.proxy2.$Proxy16.getText(Unknown Source)
+-	at Base.CarBasePage.getCarTitle(CarBasePage.java:28)
+-	at testcases.FindNewCarsTest.findNewCars(FindNewCarsTest.java:41)
+-... Removed 26 stack frames</div></td></tr></table><p class="totop"><a href="#summary">back to summary</a></p>
++<h2>Find New Car Test</h2><h3 id="m0">testcases.FindNewCarsTest#findNewCars</h3><table class="result"><tr class="param"><th>Parameter #1</th><th>Parameter #2</th><th>Parameter #3</th><th>Parameter #4</th></tr><tr class="param stripe"><td>chrome</td><td>Y</td><td>bmw</td><td>BMW Cars</td></tr></table><p class="totop"><a href="#summary">back to summary</a></p>
++<h3 id="m1">testcases.FindNewCarsTest#findNewCars</h3><table class="result"><tr class="param"><th>Parameter #1</th><th>Parameter #2</th><th>Parameter #3</th><th>Parameter #4</th></tr><tr class="param stripe"><td>chrome</td><td>Y</td><td>kia</td><td>Kia Cars</td></tr></table><p class="totop"><a href="#summary">back to summary</a></p>
++<h3 id="m2">testcases.FindNewCarsTest#findNewCars</h3><table class="result"><tr class="param"><th>Parameter #1</th><th>Parameter #2</th><th>Parameter #3</th><th>Parameter #4</th></tr><tr class="param stripe"><td>chrome</td><td>Y</td><td>audi</td><td>Audi Cars</td></tr></table><p class="totop"><a href="#summary">back to summary</a></p>
++<h3 id="m3">testcases.FindNewCarsTest#findNewCars</h3><table class="result"><tr class="param"><th>Parameter #1</th><th>Parameter #2</th><th>Parameter #3</th><th>Parameter #4</th></tr><tr class="param stripe"><td>chrome</td><td>Y</td><td>toyota</td><td>Toyota Cars</td></tr></table><p class="totop"><a href="#summary">back to summary</a></p>
++<h3 id="m4">testcases.FindNewCarsTest#findNewCars</h3><table class="result"><tr class="param"><th>Parameter #1</th><th>Parameter #2</th><th>Parameter #3</th><th>Parameter #4</th></tr><tr class="param stripe"><td>chrome</td><td>Y</td><td>hyundai</td><td>Hyundai Cars</td></tr></table><p class="totop"><a href="#summary">back to summary</a></p>
++<h2>Find Car Names and Car Prices</h2><h3 id="m5">testcases.CarNamesAndCarPricesTest#carNamesAndCarPricesTest</h3><table class="result"><tr class="param"><th>Parameter #1</th><th>Parameter #2</th><th>Parameter #3</th></tr><tr class="param stripe"><td>chrome</td><td>Y</td><td>bmw</td></tr></table><p class="totop"><a href="#summary">back to summary</a></p>
++<h3 id="m6">testcases.CarNamesAndCarPricesTest#carNamesAndCarPricesTest</h3><table class="result"><tr class="param"><th>Parameter #1</th><th>Parameter #2</th><th>Parameter #3</th></tr><tr class="param stripe"><td>chrome</td><td>Y</td><td>toyota</td></tr></table><p class="totop"><a href="#summary">back to summary</a></p>
++<h3 id="m7">testcases.CarNamesAndCarPricesTest#carNamesAndCarPricesTest</h3><table class="result"><tr class="param"><th>Parameter #1</th><th>Parameter #2</th><th>Parameter #3</th></tr><tr class="param stripe"><td>chrome</td><td>Y</td><td>audi</td></tr></table><p class="totop"><a href="#summary">back to summary</a></p>
++<h3 id="m8">testcases.CarNamesAndCarPricesTest#carNamesAndCarPricesTest</h3><table class="result"><tr class="param"><th>Parameter #1</th><th>Parameter #2</th><th>Parameter #3</th></tr><tr class="param stripe"><td>chrome</td><td>Y</td><td>kia</td></tr></table><p class="totop"><a href="#summary">back to summary</a></p>
++<h3 id="m9">testcases.CarNamesAndCarPricesTest#carNamesAndCarPricesTest</h3><table class="result"><tr class="param"><th>Parameter #1</th><th>Parameter #2</th><th>Parameter #3</th></tr><tr class="param stripe"><td>chrome</td><td>Y</td><td>hyundai</td></tr></table><p class="totop"><a href="#summary">back to summary</a></p>
+ </body>
+ </html>
+diff --git a/test-output/index.html b/test-output/index.html
+index ed6dc05..5eca201 100644
+--- a/test-output/index.html
++++ b/test-output/index.html
+@@ -24,7 +24,7 @@
+     <div class="top-banner-root">
+       <span class="top-banner-title-font">Test results</span>
+       <br/>
+-      <span class="top-banner-font-1">1 suite, 1 failed test</span>
++      <span class="top-banner-font-1">1 suite</span>
+     </div> <!-- top-banner-root -->
+     <div class="navigator-root">
+       <div class="navigator-suite-header">
+@@ -38,7 +38,7 @@
+         <div class="rounded-window">
+           <div class="suite-header light-rounded-window-top">
+             <a href="#" panel-name="suite-Page_Object_Model_Framework" class="navigator-link">
+-              <span class="suite-name border-failed">Page Object Model Framework</span>
++              <span class="suite-name border-passed">Page Object Model Framework</span>
+             </a> <!-- navigator-link -->
+           </div> <!-- suite-header light-rounded-window-top -->
+           <div class="navigator-suite-content">
+@@ -54,7 +54,7 @@
+                 </li>
+                 <li>
+                   <a href="#" panel-name="testlist-Page_Object_Model_Framework" class="navigator-link ">
+-                    <span class="test-stats">1 test</span>
++                    <span class="test-stats">2 tests</span>
+                   </a> <!-- navigator-link  -->
+                 </li>
+                 <li>
+@@ -91,21 +91,66 @@
+               <div class="suite-section-content">
+                 <ul>
+                   <li>
+-                    <span class="method-stats">1 method, 1 failed,   </span>
++                    <span class="method-stats">10 methods,   10 passed</span>
+                   </li>
+                   <li>
+-                    <span class="method-list-title failed">Failed methods</span>
+-                    <span class="show-or-hide-methods failed">
+-                      <a href="#" panel-name="suite-Page_Object_Model_Framework" class="hide-methods failed suite-Page_Object_Model_Framework"> (hide)</a> <!-- hide-methods failed suite-Page_Object_Model_Framework -->
+-                      <a href="#" panel-name="suite-Page_Object_Model_Framework" class="show-methods failed suite-Page_Object_Model_Framework"> (show)</a> <!-- show-methods failed suite-Page_Object_Model_Framework -->
++                    <span class="method-list-title passed">Passed methods</span>
++                    <span class="show-or-hide-methods passed">
++                      <a href="#" panel-name="suite-Page_Object_Model_Framework" class="hide-methods passed suite-Page_Object_Model_Framework"> (hide)</a> <!-- hide-methods passed suite-Page_Object_Model_Framework -->
++                      <a href="#" panel-name="suite-Page_Object_Model_Framework" class="show-methods passed suite-Page_Object_Model_Framework"> (show)</a> <!-- show-methods passed suite-Page_Object_Model_Framework -->
+                     </span>
+-                    <div class="method-list-content failed suite-Page_Object_Model_Framework">
++                    <div class="method-list-content passed suite-Page_Object_Model_Framework">
+                       <span>
+-                        <img src="failed.png" width="3%"/>
++                        <img src="passed.png" width="3%"/>
++                        <a href="#" panel-name="suite-Page_Object_Model_Framework" title="testcases.CarNamesAndCarPricesTest" class="method navigator-link" hash-for-method="carNamesAndCarPricesTest(chrome, Y, bmw)">carNamesAndCarPricesTest(chrome, Y, bmw)</a> <!-- method navigator-link -->
++                      </span>
++                      <br/>
++                      <span>
++                        <img src="passed.png" width="3%"/>
++                        <a href="#" panel-name="suite-Page_Object_Model_Framework" title="testcases.CarNamesAndCarPricesTest" class="method navigator-link" hash-for-method="carNamesAndCarPricesTest(chrome, Y, toyota)">carNamesAndCarPricesTest(chrome, Y, toyota)</a> <!-- method navigator-link -->
++                      </span>
++                      <br/>
++                      <span>
++                        <img src="passed.png" width="3%"/>
++                        <a href="#" panel-name="suite-Page_Object_Model_Framework" title="testcases.CarNamesAndCarPricesTest" class="method navigator-link" hash-for-method="carNamesAndCarPricesTest(chrome, Y, audi)">carNamesAndCarPricesTest(chrome, Y, audi)</a> <!-- method navigator-link -->
++                      </span>
++                      <br/>
++                      <span>
++                        <img src="passed.png" width="3%"/>
++                        <a href="#" panel-name="suite-Page_Object_Model_Framework" title="testcases.CarNamesAndCarPricesTest" class="method navigator-link" hash-for-method="carNamesAndCarPricesTest(chrome, Y, kia)">carNamesAndCarPricesTest(chrome, Y, kia)</a> <!-- method navigator-link -->
++                      </span>
++                      <br/>
++                      <span>
++                        <img src="passed.png" width="3%"/>
++                        <a href="#" panel-name="suite-Page_Object_Model_Framework" title="testcases.CarNamesAndCarPricesTest" class="method navigator-link" hash-for-method="carNamesAndCarPricesTest(chrome, Y, hyundai)">carNamesAndCarPricesTest(chrome, Y, hyundai)</a> <!-- method navigator-link -->
++                      </span>
++                      <br/>
++                      <span>
++                        <img src="passed.png" width="3%"/>
++                        <a href="#" panel-name="suite-Page_Object_Model_Framework" title="testcases.FindNewCarsTest" class="method navigator-link" hash-for-method="findNewCars(chrome, Y, bmw, BMW Cars)">findNewCars(chrome, Y, bmw, BMW Cars)</a> <!-- method navigator-link -->
++                      </span>
++                      <br/>
++                      <span>
++                        <img src="passed.png" width="3%"/>
+                         <a href="#" panel-name="suite-Page_Object_Model_Framework" title="testcases.FindNewCarsTest" class="method navigator-link" hash-for-method="findNewCars(chrome, Y, kia, Kia Cars)">findNewCars(chrome, Y, kia, Kia Cars)</a> <!-- method navigator-link -->
+                       </span>
+                       <br/>
+-                    </div> <!-- method-list-content failed suite-Page_Object_Model_Framework -->
++                      <span>
++                        <img src="passed.png" width="3%"/>
++                        <a href="#" panel-name="suite-Page_Object_Model_Framework" title="testcases.FindNewCarsTest" class="method navigator-link" hash-for-method="findNewCars(chrome, Y, audi, Audi Cars)">findNewCars(chrome, Y, audi, Audi Cars)</a> <!-- method navigator-link -->
++                      </span>
++                      <br/>
++                      <span>
++                        <img src="passed.png" width="3%"/>
++                        <a href="#" panel-name="suite-Page_Object_Model_Framework" title="testcases.FindNewCarsTest" class="method navigator-link" hash-for-method="findNewCars(chrome, Y, toyota, Toyota Cars)">findNewCars(chrome, Y, toyota, Toyota Cars)</a> <!-- method navigator-link -->
++                      </span>
++                      <br/>
++                      <span>
++                        <img src="passed.png" width="3%"/>
++                        <a href="#" panel-name="suite-Page_Object_Model_Framework" title="testcases.FindNewCarsTest" class="method navigator-link" hash-for-method="findNewCars(chrome, Y, hyundai, Hyundai Cars)">findNewCars(chrome, Y, hyundai, Hyundai Cars)</a> <!-- method navigator-link -->
++                      </span>
++                      <br/>
++                    </div> <!-- method-list-content passed suite-Page_Object_Model_Framework -->
+                   </li>
+                 </ul>
+               </div> <!-- suite-section-content -->
+@@ -117,49 +162,102 @@
+     <div class="wrapper">
+       <div class="main-panel-root">
+         <div panel-name="suite-Page_Object_Model_Framework" class="panel Page_Object_Model_Framework">
+-          <div class="suite-Page_Object_Model_Framework-class-failed">
++          <div class="suite-Page_Object_Model_Framework-class-passed">
+             <div class="main-panel-header rounded-window-top">
+-              <img src="failed.png"/>
++              <img src="passed.png"/>
+               <span class="class-name">testcases.FindNewCarsTest</span>
+             </div> <!-- main-panel-header rounded-window-top -->
+             <div class="main-panel-content rounded-window-bottom">
++              <div class="method">
++                <div class="method-content">
++                  <a name="findNewCars(chrome, Y, bmw, BMW Cars)">
++                  </a> <!-- findNewCars(chrome, Y, bmw, BMW Cars) -->
++                  <span class="method-name">findNewCars</span>
++                  <span class="parameters">(chrome, Y, bmw, BMW Cars)</span>
++                </div> <!-- method-content -->
++              </div> <!-- method -->
+               <div class="method">
+                 <div class="method-content">
+                   <a name="findNewCars(chrome, Y, kia, Kia Cars)">
+                   </a> <!-- findNewCars(chrome, Y, kia, Kia Cars) -->
+                   <span class="method-name">findNewCars</span>
+                   <span class="parameters">(chrome, Y, kia, Kia Cars)</span>
+-                  <div class="stack-trace">org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;//*[@id=&quot;root&quot;]/div[2]/div/div/div[2]/section/header/h1&quot;}
+-  (Session info: chrome=131.0.6778.205)
+-For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+-Build info: version: &apos;4.13.0&apos;, revision: &apos;ba948ece5b*&apos;
+-System info: os.name: &apos;Windows 11&apos;, os.arch: &apos;amd64&apos;, os.version: &apos;10.0&apos;, java.version: &apos;18&apos;
+-Driver info: org.openqa.selenium.chrome.ChromeDriver
+-Command: [e33101bfd5632194ad0acca08224cfdc, findElement {using=xpath, value=//*[@id=&quot;root&quot;]/div[2]/div/div/div[2]/section/header/h1}]
+-Capabilities {acceptInsecureCerts: false, browserName: chrome, browserVersion: 131.0.6778.205, chrome: {chromedriverVersion: 131.0.6778.204 (52183f9e99a..., userDataDir: C:\Users\TANYAF~1\AppData\L...}, fedcm:accounts: true, goog:chromeOptions: {debuggerAddress: localhost:54789}, networkConnectionEnabled: false, pageLoadStrategy: normal, platformName: windows, proxy: Proxy(), se:cdp: ws://localhost:54789/devtoo..., se:cdpVersion: 131.0.6778.205, setWindowRect: true, strictFileInteractability: false, timeouts: {implicit: 0, pageLoad: 300000, script: 30000}, unhandledPromptBehavior: dismiss and notify, webauthn:extension:credBlob: true, webauthn:extension:largeBlob: true, webauthn:extension:minPinLength: true, webauthn:extension:prf: true, webauthn:virtualAuthenticators: true}
+-Session ID: e33101bfd5632194ad0acca08224cfdc
+-	at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.createException(W3CHttpResponseCodec.java:200)
+-	at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.decode(W3CHttpResponseCodec.java:133)
+-	at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.decode(W3CHttpResponseCodec.java:52)
+-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:191)
+-	at org.openqa.selenium.remote.service.DriverCommandExecutor.invokeExecute(DriverCommandExecutor.java:196)
+-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:171)
+-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:602)
+-	at org.openqa.selenium.remote.ElementLocation$ElementFinder$2.findElement(ElementLocation.java:165)
+-	at org.openqa.selenium.remote.ElementLocation.findElement(ElementLocation.java:59)
+-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:359)
+-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:353)
+-	at org.openqa.selenium.support.pagefactory.DefaultElementLocator.findElement(DefaultElementLocator.java:68)
+-	at org.openqa.selenium.support.pagefactory.internal.LocatingElementHandler.invoke(LocatingElementHandler.java:38)
+-	at jdk.proxy2/jdk.proxy2.$Proxy16.getText(Unknown Source)
+-	at Base.CarBasePage.getCarTitle(CarBasePage.java:28)
+-	at testcases.FindNewCarsTest.findNewCars(FindNewCarsTest.java:41)
+-... Removed 26 stack frames
+-</div> <!-- stack-trace -->
++                </div> <!-- method-content -->
++              </div> <!-- method -->
++              <div class="method">
++                <div class="method-content">
++                  <a name="findNewCars(chrome, Y, audi, Audi Cars)">
++                  </a> <!-- findNewCars(chrome, Y, audi, Audi Cars) -->
++                  <span class="method-name">findNewCars</span>
++                  <span class="parameters">(chrome, Y, audi, Audi Cars)</span>
++                </div> <!-- method-content -->
++              </div> <!-- method -->
++              <div class="method">
++                <div class="method-content">
++                  <a name="findNewCars(chrome, Y, toyota, Toyota Cars)">
++                  </a> <!-- findNewCars(chrome, Y, toyota, Toyota Cars) -->
++                  <span class="method-name">findNewCars</span>
++                  <span class="parameters">(chrome, Y, toyota, Toyota Cars)</span>
++                </div> <!-- method-content -->
++              </div> <!-- method -->
++              <div class="method">
++                <div class="method-content">
++                  <a name="findNewCars(chrome, Y, hyundai, Hyundai Cars)">
++                  </a> <!-- findNewCars(chrome, Y, hyundai, Hyundai Cars) -->
++                  <span class="method-name">findNewCars</span>
++                  <span class="parameters">(chrome, Y, hyundai, Hyundai Cars)</span>
+                 </div> <!-- method-content -->
+               </div> <!-- method -->
+             </div> <!-- main-panel-content rounded-window-bottom -->
+-          </div> <!-- suite-Page_Object_Model_Framework-class-failed -->
++          </div> <!-- suite-Page_Object_Model_Framework-class-passed -->
++          <div class="suite-Page_Object_Model_Framework-class-passed">
++            <div class="main-panel-header rounded-window-top">
++              <img src="passed.png"/>
++              <span class="class-name">testcases.CarNamesAndCarPricesTest</span>
++            </div> <!-- main-panel-header rounded-window-top -->
++            <div class="main-panel-content rounded-window-bottom">
++              <div class="method">
++                <div class="method-content">
++                  <a name="carNamesAndCarPricesTest(chrome, Y, bmw)">
++                  </a> <!-- carNamesAndCarPricesTest(chrome, Y, bmw) -->
++                  <span class="method-name">carNamesAndCarPricesTest</span>
++                  <span class="parameters">(chrome, Y, bmw)</span>
++                </div> <!-- method-content -->
++              </div> <!-- method -->
++              <div class="method">
++                <div class="method-content">
++                  <a name="carNamesAndCarPricesTest(chrome, Y, toyota)">
++                  </a> <!-- carNamesAndCarPricesTest(chrome, Y, toyota) -->
++                  <span class="method-name">carNamesAndCarPricesTest</span>
++                  <span class="parameters">(chrome, Y, toyota)</span>
++                </div> <!-- method-content -->
++              </div> <!-- method -->
++              <div class="method">
++                <div class="method-content">
++                  <a name="carNamesAndCarPricesTest(chrome, Y, audi)">
++                  </a> <!-- carNamesAndCarPricesTest(chrome, Y, audi) -->
++                  <span class="method-name">carNamesAndCarPricesTest</span>
++                  <span class="parameters">(chrome, Y, audi)</span>
++                </div> <!-- method-content -->
++              </div> <!-- method -->
++              <div class="method">
++                <div class="method-content">
++                  <a name="carNamesAndCarPricesTest(chrome, Y, kia)">
++                  </a> <!-- carNamesAndCarPricesTest(chrome, Y, kia) -->
++                  <span class="method-name">carNamesAndCarPricesTest</span>
++                  <span class="parameters">(chrome, Y, kia)</span>
++                </div> <!-- method-content -->
++              </div> <!-- method -->
++              <div class="method">
++                <div class="method-content">
++                  <a name="carNamesAndCarPricesTest(chrome, Y, hyundai)">
++                  </a> <!-- carNamesAndCarPricesTest(chrome, Y, hyundai) -->
++                  <span class="method-name">carNamesAndCarPricesTest</span>
++                  <span class="parameters">(chrome, Y, hyundai)</span>
++                </div> <!-- method-content -->
++              </div> <!-- method -->
++            </div> <!-- main-panel-content rounded-window-bottom -->
++          </div> <!-- suite-Page_Object_Model_Framework-class-passed -->
+         </div> <!-- panel Page_Object_Model_Framework -->
+         <div panel-name="test-xml-Page_Object_Model_Framework" class="panel">
+           <div class="main-panel-header rounded-window-top">
+@@ -175,6 +273,11 @@ Session ID: e33101bfd5632194ad0acca08224cfdc
+       &lt;class name=&quot;testcases.FindNewCarsTest&quot;/&gt;
+     &lt;/classes&gt;
+   &lt;/test&gt; &lt;!-- Find New Car Test --&gt;
++  &lt;test thread-count=&quot;5&quot; name=&quot;Find Car Names and Car Prices&quot;&gt;
++    &lt;classes&gt;
++      &lt;class name=&quot;testcases.CarNamesAndCarPricesTest&quot;/&gt;
++    &lt;/classes&gt;
++  &lt;/test&gt; &lt;!-- Find Car Names and Car Prices --&gt;
+ &lt;/suite&gt; &lt;!-- Page Object Model Framework --&gt;
+             </pre>
+           </div> <!-- main-panel-content rounded-window-bottom -->
+@@ -188,6 +291,9 @@ Session ID: e33101bfd5632194ad0acca08224cfdc
+               <li>
+                 <span class="test-name">Find New Car Test (1 class)</span>
+               </li>
++              <li>
++                <span class="test-name">Find Car Names and Car Prices (1 class)</span>
++              </li>
+             </ul>
+           </div> <!-- main-panel-content rounded-window-bottom -->
+         </div> <!-- panel -->
+@@ -212,16 +318,52 @@ data.addColumn('number', 'Number');
+ data.addColumn('string', 'Method');
+ data.addColumn('string', 'Class');
+ data.addColumn('number', 'Time (ms)');
+-data.addRows(1);
++data.addRows(10);
+ data.setCell(0, 0, 0)
+-data.setCell(0, 1, 'findNewCars')
+-data.setCell(0, 2, 'testcases.FindNewCarsTest')
+-data.setCell(0, 3, 15188);
++data.setCell(0, 1, 'carNamesAndCarPricesTest')
++data.setCell(0, 2, 'testcases.CarNamesAndCarPricesTest')
++data.setCell(0, 3, 222273);
++data.setCell(1, 0, 1)
++data.setCell(1, 1, 'carNamesAndCarPricesTest')
++data.setCell(1, 2, 'testcases.CarNamesAndCarPricesTest')
++data.setCell(1, 3, 7249);
++data.setCell(2, 0, 2)
++data.setCell(2, 1, 'carNamesAndCarPricesTest')
++data.setCell(2, 2, 'testcases.CarNamesAndCarPricesTest')
++data.setCell(2, 3, 6026);
++data.setCell(3, 0, 3)
++data.setCell(3, 1, 'findNewCars')
++data.setCell(3, 2, 'testcases.FindNewCarsTest')
++data.setCell(3, 3, 5109);
++data.setCell(4, 0, 4)
++data.setCell(4, 1, 'carNamesAndCarPricesTest')
++data.setCell(4, 2, 'testcases.CarNamesAndCarPricesTest')
++data.setCell(4, 3, 5046);
++data.setCell(5, 0, 5)
++data.setCell(5, 1, 'findNewCars')
++data.setCell(5, 2, 'testcases.FindNewCarsTest')
++data.setCell(5, 3, 4817);
++data.setCell(6, 0, 6)
++data.setCell(6, 1, 'findNewCars')
++data.setCell(6, 2, 'testcases.FindNewCarsTest')
++data.setCell(6, 3, 4592);
++data.setCell(7, 0, 7)
++data.setCell(7, 1, 'carNamesAndCarPricesTest')
++data.setCell(7, 2, 'testcases.CarNamesAndCarPricesTest')
++data.setCell(7, 3, 4132);
++data.setCell(8, 0, 8)
++data.setCell(8, 1, 'findNewCars')
++data.setCell(8, 2, 'testcases.FindNewCarsTest')
++data.setCell(8, 3, 4063);
++data.setCell(9, 0, 9)
++data.setCell(9, 1, 'findNewCars')
++data.setCell(9, 2, 'testcases.FindNewCarsTest')
++data.setCell(9, 3, 3542);
+ window.suiteTableData['Page_Object_Model_Framework']= { tableData: data, tableDiv: 'times-div-Page_Object_Model_Framework'}
+ return data;
+ }
+               </script>
+-              <span class="suite-total-time">Total running time: 15 seconds</span>
++              <span class="suite-total-time">Total running time: 4 minutes</span>
+               <div id="times-div-Page_Object_Model_Framework">
+               </div> <!-- times-div-Page_Object_Model_Framework -->
+             </div> <!-- times-div -->
+@@ -249,14 +391,87 @@ return data;
+             <div class="chronological-class">
+               <div class="chronological-class-name">testcases.FindNewCarsTest</div> <!-- chronological-class-name -->
+               <div class="test-method">
+-                <img src="failed.png">
+-                </img>
+                 <span class="method-name">findNewCars(chrome, Y, kia, Kia Cars)</span>
+                 <span class="method-start">0 ms</span>
+               </div> <!-- test-method -->
+               <div class="configuration-method after">
+                 <span class="method-name">tearDown</span>
+-                <span class="method-start">15191 ms</span>
++                <span class="method-start">4818 ms</span>
++              </div> <!-- configuration-method after -->
++              <div class="test-method">
++                <span class="method-name">findNewCars(chrome, Y, toyota, Toyota Cars)</span>
++                <span class="method-start">5000 ms</span>
++              </div> <!-- test-method -->
++              <div class="configuration-method after">
++                <span class="method-name">tearDown</span>
++                <span class="method-start">8543 ms</span>
++              </div> <!-- configuration-method after -->
++              <div class="test-method">
++                <span class="method-name">findNewCars(chrome, Y, bmw, BMW Cars)</span>
++                <span class="method-start">8765 ms</span>
++              </div> <!-- test-method -->
++              <div class="configuration-method after">
++                <span class="method-name">tearDown</span>
++                <span class="method-start">13874 ms</span>
++              </div> <!-- configuration-method after -->
++              <div class="test-method">
++                <span class="method-name">findNewCars(chrome, Y, hyundai, Hyundai Cars)</span>
++                <span class="method-start">14304 ms</span>
++              </div> <!-- test-method -->
++              <div class="configuration-method after">
++                <span class="method-name">tearDown</span>
++                <span class="method-start">18898 ms</span>
++              </div> <!-- configuration-method after -->
++              <div class="test-method">
++                <span class="method-name">findNewCars(chrome, Y, audi, Audi Cars)</span>
++                <span class="method-start">19088 ms</span>
++              </div> <!-- test-method -->
++              <div class="configuration-method after">
++                <span class="method-name">tearDown</span>
++                <span class="method-start">23152 ms</span>
++              </div> <!-- configuration-method after -->
++            </div> <!-- chronological-class -->
++            <div class="chronological-class">
++              <div class="chronological-class-name">testcases.CarNamesAndCarPricesTest</div> <!-- chronological-class-name -->
++              <div class="test-method">
++                <span class="method-name">carNamesAndCarPricesTest(chrome, Y, kia)</span>
++                <span class="method-start">23375 ms</span>
++              </div> <!-- test-method -->
++              <div class="configuration-method after">
++                <span class="method-name">tearDown</span>
++                <span class="method-start">27507 ms</span>
++              </div> <!-- configuration-method after -->
++              <div class="test-method">
++                <span class="method-name">carNamesAndCarPricesTest(chrome, Y, toyota)</span>
++                <span class="method-start">27507 ms</span>
++              </div> <!-- test-method -->
++              <div class="configuration-method after">
++                <span class="method-name">tearDown</span>
++                <span class="method-start">33533 ms</span>
++              </div> <!-- configuration-method after -->
++              <div class="test-method">
++                <span class="method-name">carNamesAndCarPricesTest(chrome, Y, bmw)</span>
++                <span class="method-start">33533 ms</span>
++              </div> <!-- test-method -->
++              <div class="configuration-method after">
++                <span class="method-name">tearDown</span>
++                <span class="method-start">38579 ms</span>
++              </div> <!-- configuration-method after -->
++              <div class="test-method">
++                <span class="method-name">carNamesAndCarPricesTest(chrome, Y, hyundai)</span>
++                <span class="method-start">38579 ms</span>
++              </div> <!-- test-method -->
++              <div class="configuration-method after">
++                <span class="method-name">tearDown</span>
++                <span class="method-start">45828 ms</span>
++              </div> <!-- configuration-method after -->
++              <div class="test-method">
++                <span class="method-name">carNamesAndCarPricesTest(chrome, Y, audi)</span>
++                <span class="method-start">45828 ms</span>
++              </div> <!-- test-method -->
++              <div class="configuration-method after">
++                <span class="method-name">tearDown</span>
++                <span class="method-start">268102 ms</span>
+               </div> <!-- configuration-method after -->
+           </div> <!-- main-panel-content rounded-window-bottom -->
+         </div> <!-- panel -->
+diff --git a/test-output/junitreports/TEST-testcases.FindNewCarsTest.xml b/test-output/junitreports/TEST-testcases.FindNewCarsTest.xml
+index baed22a..7286454 100644
+--- a/test-output/junitreports/TEST-testcases.FindNewCarsTest.xml
++++ b/test-output/junitreports/TEST-testcases.FindNewCarsTest.xml
+@@ -1,68 +1,9 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <!-- Generated by org.testng.reporters.JUnitReportReporter -->
+-<testsuite hostname="LAPTOP-5ONM4F1J" failures="0" tests="1" name="testcases.FindNewCarsTest" time="15.422" errors="1" timestamp="21 Dec 2024 14:01:26 GMT" skipped="0">
+-  <testcase classname="testcases.FindNewCarsTest" name="findNewCars" time="15.422">
+-    <error message="no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;//*[@id=&quot;root&quot;]/div[2]/div/div/div[2]/section/header/h1&quot;}
+-  (Session info: chrome=131.0.6778.205)
+-For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+-Build info: version: &#039;4.13.0&#039;, revision: &#039;ba948ece5b*&#039;
+-System info: os.name: &#039;Windows 11&#039;, os.arch: &#039;amd64&#039;, os.version: &#039;10.0&#039;, java.version: &#039;18&#039;
+-Driver info: org.openqa.selenium.chrome.ChromeDriver
+-Command: [e33101bfd5632194ad0acca08224cfdc, findElement {using=xpath, value=//*[@id=&quot;root&quot;]/div[2]/div/div/div[2]/section/header/h1}]
+-Capabilities {acceptInsecureCerts: false, browserName: chrome, browserVersion: 131.0.6778.205, chrome: {chromedriverVersion: 131.0.6778.204 (52183f9e99a..., userDataDir: C:\Users\TANYAF~1\AppData\L...}, fedcm:accounts: true, goog:chromeOptions: {debuggerAddress: localhost:54789}, networkConnectionEnabled: false, pageLoadStrategy: normal, platformName: windows, proxy: Proxy(), se:cdp: ws://localhost:54789/devtoo..., se:cdpVersion: 131.0.6778.205, setWindowRect: true, strictFileInteractability: false, timeouts: {implicit: 0, pageLoad: 300000, script: 30000}, unhandledPromptBehavior: dismiss and notify, webauthn:extension:credBlob: true, webauthn:extension:largeBlob: true, webauthn:extension:minPinLength: true, webauthn:extension:prf: true, webauthn:virtualAuthenticators: true}
+-Session ID: e33101bfd5632194ad0acca08224cfdc" type="org.openqa.selenium.NoSuchElementException">
+-      <![CDATA[org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {"method":"xpath","selector":"//*[@id="root"]/div[2]/div/div/div[2]/section/header/h1"}
+-  (Session info: chrome=131.0.6778.205)
+-For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+-Build info: version: '4.13.0', revision: 'ba948ece5b*'
+-System info: os.name: 'Windows 11', os.arch: 'amd64', os.version: '10.0', java.version: '18'
+-Driver info: org.openqa.selenium.chrome.ChromeDriver
+-Command: [e33101bfd5632194ad0acca08224cfdc, findElement {using=xpath, value=//*[@id="root"]/div[2]/div/div/div[2]/section/header/h1}]
+-Capabilities {acceptInsecureCerts: false, browserName: chrome, browserVersion: 131.0.6778.205, chrome: {chromedriverVersion: 131.0.6778.204 (52183f9e99a..., userDataDir: C:\Users\TANYAF~1\AppData\L...}, fedcm:accounts: true, goog:chromeOptions: {debuggerAddress: localhost:54789}, networkConnectionEnabled: false, pageLoadStrategy: normal, platformName: windows, proxy: Proxy(), se:cdp: ws://localhost:54789/devtoo..., se:cdpVersion: 131.0.6778.205, setWindowRect: true, strictFileInteractability: false, timeouts: {implicit: 0, pageLoad: 300000, script: 30000}, unhandledPromptBehavior: dismiss and notify, webauthn:extension:credBlob: true, webauthn:extension:largeBlob: true, webauthn:extension:minPinLength: true, webauthn:extension:prf: true, webauthn:virtualAuthenticators: true}
+-Session ID: e33101bfd5632194ad0acca08224cfdc
+-at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(DirectConstructorHandleAccessor.java:67)
+-at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:499)
+-at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:483)
+-at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.createException(W3CHttpResponseCodec.java:200)
+-at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.decode(W3CHttpResponseCodec.java:133)
+-at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.decode(W3CHttpResponseCodec.java:52)
+-at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:191)
+-at org.openqa.selenium.remote.service.DriverCommandExecutor.invokeExecute(DriverCommandExecutor.java:196)
+-at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:171)
+-at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:602)
+-at org.openqa.selenium.remote.ElementLocation$ElementFinder$2.findElement(ElementLocation.java:165)
+-at org.openqa.selenium.remote.ElementLocation.findElement(ElementLocation.java:59)
+-at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:359)
+-at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:353)
+-at org.openqa.selenium.support.pagefactory.DefaultElementLocator.findElement(DefaultElementLocator.java:68)
+-at org.openqa.selenium.support.pagefactory.internal.LocatingElementHandler.invoke(LocatingElementHandler.java:38)
+-at jdk.proxy2/jdk.proxy2.$Proxy16.getText(Unknown Source)
+-at Base.CarBasePage.getCarTitle(CarBasePage.java:28)
+-at testcases.FindNewCarsTest.findNewCars(FindNewCarsTest.java:41)
+-at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+-at java.base/java.lang.reflect.Method.invoke(Method.java:577)
+-at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:124)
+-at org.testng.internal.Invoker.invokeMethod(Invoker.java:583)
+-at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:719)
+-at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:989)
+-at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:125)
+-at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+-at org.testng.TestRunner.privateRun(TestRunner.java:648)
+-at org.testng.TestRunner.run(TestRunner.java:505)
+-at org.testng.SuiteRunner.runTest(SuiteRunner.java:455)
+-at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:450)
+-at org.testng.SuiteRunner.privateRun(SuiteRunner.java:415)
+-at org.testng.SuiteRunner.run(SuiteRunner.java:364)
+-at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+-at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:84)
+-at org.testng.TestNG.runSuitesSequentially(TestNG.java:1208)
+-at org.testng.TestNG.runSuitesLocally(TestNG.java:1137)
+-at org.testng.TestNG.runSuites(TestNG.java:1049)
+-at org.testng.TestNG.run(TestNG.java:1017)
+-at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:115)
+-at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:251)
+-at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:77)
+-]]>
+-    </error>
+-  </testcase> <!-- findNewCars -->
++<testsuite hostname="LAPTOP-5ONM4F1J" failures="0" tests="5" name="testcases.FindNewCarsTest" time="23.321" errors="0" timestamp="25 Dec 2024 12:37:13 GMT" skipped="0">
++  <testcase classname="testcases.FindNewCarsTest" name="findNewCars" time="5.284"/>
++  <testcase classname="testcases.FindNewCarsTest" name="findNewCars" time="5.007"/>
++  <testcase classname="testcases.FindNewCarsTest" name="findNewCars" time="4.492"/>
++  <testcase classname="testcases.FindNewCarsTest" name="findNewCars" time="3.764"/>
++  <testcase classname="testcases.FindNewCarsTest" name="findNewCars" time="4.774"/>
+ </testsuite> <!-- testcases.FindNewCarsTest -->
+diff --git a/test-output/old/Page Object Model Framework/Find New Car Test.properties b/test-output/old/Page Object Model Framework/Find New Car Test.properties
+index d0cedde..3c3d8d7 100644
+--- a/test-output/old/Page Object Model Framework/Find New Car Test.properties	
++++ b/test-output/old/Page Object Model Framework/Find New Car Test.properties	
+@@ -1 +1 @@
+-[SuiteResult context=Find New Car Test]
+\ No newline at end of file
++[SuiteResult context=Find New Car Test][SuiteResult context=Find Car Names and Car Prices]
+\ No newline at end of file
+diff --git a/test-output/old/Page Object Model Framework/classes.html b/test-output/old/Page Object Model Framework/classes.html
+index 5094a16..e2e7086 100644
+--- a/test-output/old/Page Object Model Framework/classes.html	
++++ b/test-output/old/Page Object Model Framework/classes.html	
+@@ -4,6 +4,32 @@
+ <th>Method name</th>
+ <th>Groups</th>
+ </tr><tr>
++<td>testcases.CarNamesAndCarPricesTest</td>
++<td>&nbsp;</td><td>&nbsp;</td></tr>
++<tr>
++<td align='center' colspan='3'>@Test</td>
++</tr>
++<tr>
++<td>&nbsp;</td>
++<td>carNamesAndCarPricesTest</td>
++<td>&nbsp;</td></tr>
++<tr>
++<td align='center' colspan='3'>@BeforeClass</td>
++</tr>
++<tr>
++<td align='center' colspan='3'>@BeforeMethod</td>
++</tr>
++<tr>
++<td align='center' colspan='3'>@AfterMethod</td>
++</tr>
++<tr>
++<td>&nbsp;</td>
++<td>tearDown</td>
++<td>&nbsp;</td></tr>
++<tr>
++<td align='center' colspan='3'>@AfterClass</td>
++</tr>
++<tr>
+ <td>testcases.FindNewCarsTest</td>
+ <td>&nbsp;</td><td>&nbsp;</td></tr>
+ <tr>
+diff --git a/test-output/old/Page Object Model Framework/methods-alphabetical.html b/test-output/old/Page Object Model Framework/methods-alphabetical.html
+index 7dcf324..10b1fa6 100644
+--- a/test-output/old/Page Object Model Framework/methods-alphabetical.html	
++++ b/test-output/old/Page Object Model Framework/methods-alphabetical.html	
+@@ -1,8 +1,44 @@
+ <h2>Methods run, sorted chronologically</h2><h3>&gt;&gt; means before, &lt;&lt; means after</h3><p/><br/><em>Page Object Model Framework</em><p/><small><i>(Hover the method name to see the test class name)</i></small><p/>
+ <table border="1">
+ <tr><th>Time</th><th>Delta (ms)</th><th>Suite<br>configuration</th><th>Test<br>configuration</th><th>Class<br>configuration</th><th>Groups<br>configuration</th><th>Method<br>configuration</th><th>Test<br>method</th><th>Thread</th><th>Instances</th></tr>
+-<tr bgcolor="7abbb4">  <td>24/12/21 19:31:11</td>   <td>0</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="FindNewCarsTest.findNewCars(java.lang.String, java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.FindNewCarsTest@1ef3efa8]">findNewCars</td> 
++<tr bgcolor="8fa663">  <td>24/12/25 18:03:08</td>   <td>0</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="CarNamesAndCarPricesTest.carNamesAndCarPricesTest(java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">carNamesAndCarPricesTest</td> 
+   <td>main@1510467688</td>   <td></td> </tr>
+-<tr bgcolor="98bcce">  <td>24/12/21 19:31:26</td>   <td>15191</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.FindNewCarsTest@1ef3efa8]">&lt;&lt;tearDown</td> 
++<tr bgcolor="8fa663">  <td>24/12/25 18:03:12</td>   <td>4132</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="CarNamesAndCarPricesTest.carNamesAndCarPricesTest(java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">carNamesAndCarPricesTest</td> 
++  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="8fa663">  <td>24/12/25 18:03:18</td>   <td>10158</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="CarNamesAndCarPricesTest.carNamesAndCarPricesTest(java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">carNamesAndCarPricesTest</td> 
++  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="8fa663">  <td>24/12/25 18:03:23</td>   <td>15204</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="CarNamesAndCarPricesTest.carNamesAndCarPricesTest(java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">carNamesAndCarPricesTest</td> 
++  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="8fa663">  <td>24/12/25 18:03:30</td>   <td>22453</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="CarNamesAndCarPricesTest.carNamesAndCarPricesTest(java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">carNamesAndCarPricesTest</td> 
++  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="61d8d1">  <td>24/12/25 18:02:45</td>   <td>-23375</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="FindNewCarsTest.findNewCars(java.lang.String, java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">findNewCars</td> 
++  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="61d8d1">  <td>24/12/25 18:02:50</td>   <td>-18375</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="FindNewCarsTest.findNewCars(java.lang.String, java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">findNewCars</td> 
++  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="61d8d1">  <td>24/12/25 18:02:53</td>   <td>-14610</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="FindNewCarsTest.findNewCars(java.lang.String, java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">findNewCars</td> 
++  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="61d8d1">  <td>24/12/25 18:02:59</td>   <td>-9072</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="FindNewCarsTest.findNewCars(java.lang.String, java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">findNewCars</td> 
++  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="61d8d1">  <td>24/12/25 18:03:04</td>   <td>-4287</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="FindNewCarsTest.findNewCars(java.lang.String, java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">findNewCars</td> 
++  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:02:49</td>   <td>-18557</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">&lt;&lt;tearDown</td> 
++<td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:02:53</td>   <td>-14832</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">&lt;&lt;tearDown</td> 
++<td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:02:58</td>   <td>-9501</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">&lt;&lt;tearDown</td> 
++<td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:03:03</td>   <td>-4477</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">&lt;&lt;tearDown</td> 
++<td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:03:08</td>   <td>-223</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">&lt;&lt;tearDown</td> 
++<td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:03:12</td>   <td>4132</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">&lt;&lt;tearDown</td> 
++<td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:03:18</td>   <td>10158</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">&lt;&lt;tearDown</td> 
++<td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:03:23</td>   <td>15204</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">&lt;&lt;tearDown</td> 
++<td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:03:30</td>   <td>22453</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">&lt;&lt;tearDown</td> 
++<td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:07:13</td>   <td>244728</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">&lt;&lt;tearDown</td> 
+ <td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
+ </table>
+diff --git a/test-output/old/Page Object Model Framework/methods.html b/test-output/old/Page Object Model Framework/methods.html
+index 7dcf324..ee2400c 100644
+--- a/test-output/old/Page Object Model Framework/methods.html	
++++ b/test-output/old/Page Object Model Framework/methods.html	
+@@ -1,8 +1,44 @@
+ <h2>Methods run, sorted chronologically</h2><h3>&gt;&gt; means before, &lt;&lt; means after</h3><p/><br/><em>Page Object Model Framework</em><p/><small><i>(Hover the method name to see the test class name)</i></small><p/>
+ <table border="1">
+ <tr><th>Time</th><th>Delta (ms)</th><th>Suite<br>configuration</th><th>Test<br>configuration</th><th>Class<br>configuration</th><th>Groups<br>configuration</th><th>Method<br>configuration</th><th>Test<br>method</th><th>Thread</th><th>Instances</th></tr>
+-<tr bgcolor="7abbb4">  <td>24/12/21 19:31:11</td>   <td>0</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="FindNewCarsTest.findNewCars(java.lang.String, java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.FindNewCarsTest@1ef3efa8]">findNewCars</td> 
++<tr bgcolor="61d8d1">  <td>24/12/25 18:02:45</td>   <td>0</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="FindNewCarsTest.findNewCars(java.lang.String, java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">findNewCars</td> 
+   <td>main@1510467688</td>   <td></td> </tr>
+-<tr bgcolor="98bcce">  <td>24/12/21 19:31:26</td>   <td>15191</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.FindNewCarsTest@1ef3efa8]">&lt;&lt;tearDown</td> 
++<tr bgcolor="6aac89">  <td>24/12/25 18:02:49</td>   <td>4818</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">&lt;&lt;tearDown</td> 
++<td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="61d8d1">  <td>24/12/25 18:02:50</td>   <td>5000</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="FindNewCarsTest.findNewCars(java.lang.String, java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">findNewCars</td> 
++  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:02:53</td>   <td>8543</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">&lt;&lt;tearDown</td> 
++<td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="61d8d1">  <td>24/12/25 18:02:53</td>   <td>8765</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="FindNewCarsTest.findNewCars(java.lang.String, java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">findNewCars</td> 
++  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:02:58</td>   <td>13874</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">&lt;&lt;tearDown</td> 
++<td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="61d8d1">  <td>24/12/25 18:02:59</td>   <td>14303</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="FindNewCarsTest.findNewCars(java.lang.String, java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">findNewCars</td> 
++  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:03:03</td>   <td>18898</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">&lt;&lt;tearDown</td> 
++<td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="61d8d1">  <td>24/12/25 18:03:04</td>   <td>19088</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="FindNewCarsTest.findNewCars(java.lang.String, java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">findNewCars</td> 
++  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:03:08</td>   <td>23152</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.FindNewCarsTest@47605f2f]">&lt;&lt;tearDown</td> 
++<td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="8fa663">  <td>24/12/25 18:03:08</td>   <td>23375</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="CarNamesAndCarPricesTest.carNamesAndCarPricesTest(java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">carNamesAndCarPricesTest</td> 
++  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:03:12</td>   <td>27507</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">&lt;&lt;tearDown</td> 
++<td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="8fa663">  <td>24/12/25 18:03:12</td>   <td>27507</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="CarNamesAndCarPricesTest.carNamesAndCarPricesTest(java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">carNamesAndCarPricesTest</td> 
++  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:03:18</td>   <td>33533</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">&lt;&lt;tearDown</td> 
++<td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="8fa663">  <td>24/12/25 18:03:18</td>   <td>33533</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="CarNamesAndCarPricesTest.carNamesAndCarPricesTest(java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">carNamesAndCarPricesTest</td> 
++  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:03:23</td>   <td>38579</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">&lt;&lt;tearDown</td> 
++<td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="8fa663">  <td>24/12/25 18:03:23</td>   <td>38579</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="CarNamesAndCarPricesTest.carNamesAndCarPricesTest(java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">carNamesAndCarPricesTest</td> 
++  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:03:30</td>   <td>45828</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">&lt;&lt;tearDown</td> 
++<td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="8fa663">  <td>24/12/25 18:03:30</td>   <td>45828</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="CarNamesAndCarPricesTest.carNamesAndCarPricesTest(java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">carNamesAndCarPricesTest</td> 
++  <td>main@1510467688</td>   <td></td> </tr>
++<tr bgcolor="6aac89">  <td>24/12/25 18:07:13</td>   <td>268103</td> <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td title="&lt;&lt;BaseTest.tearDown()[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]">&lt;&lt;tearDown</td> 
+ <td>&nbsp;</td>  <td>main@1510467688</td>   <td></td> </tr>
+ </table>
+diff --git a/test-output/old/Page Object Model Framework/testng.xml.html b/test-output/old/Page Object Model Framework/testng.xml.html
+index 7baa601..ecf49bf 100644
+--- a/test-output/old/Page Object Model Framework/testng.xml.html	
++++ b/test-output/old/Page Object Model Framework/testng.xml.html	
+@@ -1 +1 @@
+-<html><head><title>testng.xml for Page Object Model Framework</title></head><body><tt>&lt;?xml&nbsp;version="1.0"&nbsp;encoding="UTF-8"?&gt;<br/>&lt;!DOCTYPE&nbsp;suite&nbsp;SYSTEM&nbsp;"http://testng.org/testng-1.0.dtd"&gt;<br/>&lt;suite&nbsp;name="Page&nbsp;Object&nbsp;Model&nbsp;Framework"&nbsp;guice-stage="DEVELOPMENT"&gt;<br/>&nbsp;&nbsp;&lt;test&nbsp;thread-count="5"&nbsp;name="Find&nbsp;New&nbsp;Car&nbsp;Test"&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;classes&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;class&nbsp;name="testcases.FindNewCarsTest"/&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;/classes&gt;<br/>&nbsp;&nbsp;&lt;/test&gt;&nbsp;&lt;!--&nbsp;Find&nbsp;New&nbsp;Car&nbsp;Test&nbsp;--&gt;<br/>&lt;/suite&gt;&nbsp;&lt;!--&nbsp;Page&nbsp;Object&nbsp;Model&nbsp;Framework&nbsp;--&gt;<br/></tt></body></html>
+\ No newline at end of file
++<html><head><title>testng.xml for Page Object Model Framework</title></head><body><tt>&lt;?xml&nbsp;version="1.0"&nbsp;encoding="UTF-8"?&gt;<br/>&lt;!DOCTYPE&nbsp;suite&nbsp;SYSTEM&nbsp;"http://testng.org/testng-1.0.dtd"&gt;<br/>&lt;suite&nbsp;name="Page&nbsp;Object&nbsp;Model&nbsp;Framework"&nbsp;guice-stage="DEVELOPMENT"&gt;<br/>&nbsp;&nbsp;&lt;test&nbsp;thread-count="5"&nbsp;name="Find&nbsp;New&nbsp;Car&nbsp;Test"&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;classes&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;class&nbsp;name="testcases.FindNewCarsTest"/&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;/classes&gt;<br/>&nbsp;&nbsp;&lt;/test&gt;&nbsp;&lt;!--&nbsp;Find&nbsp;New&nbsp;Car&nbsp;Test&nbsp;--&gt;<br/>&nbsp;&nbsp;&lt;test&nbsp;thread-count="5"&nbsp;name="Find&nbsp;Car&nbsp;Names&nbsp;and&nbsp;Car&nbsp;Prices"&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;classes&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;class&nbsp;name="testcases.CarNamesAndCarPricesTest"/&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;/classes&gt;<br/>&nbsp;&nbsp;&lt;/test&gt;&nbsp;&lt;!--&nbsp;Find&nbsp;Car&nbsp;Names&nbsp;and&nbsp;Car&nbsp;Prices&nbsp;--&gt;<br/>&lt;/suite&gt;&nbsp;&lt;!--&nbsp;Page&nbsp;Object&nbsp;Model&nbsp;Framework&nbsp;--&gt;<br/></tt></body></html>
+\ No newline at end of file
+diff --git a/test-output/old/Page Object Model Framework/toc.html b/test-output/old/Page Object Model Framework/toc.html
+index 64c8d0d..45f5421 100644
+--- a/test-output/old/Page Object Model Framework/toc.html	
++++ b/test-output/old/Page Object Model Framework/toc.html	
+@@ -8,9 +8,9 @@
+ <h3><p align="center">Results for<br/><em>Page Object Model Framework</em></p></h3>
+ <table border='1' width='100%'>
+ <tr valign='top'>
+-<td>1 test</td>
+-<td><a target='mainFrame' href='classes.html'>1 class</a></td>
+-<td>1 method:<br/>
++<td>2 tests</td>
++<td><a target='mainFrame' href='classes.html'>2 classes</a></td>
++<td>2 methods:<br/>
+ &nbsp;&nbsp;<a target='mainFrame' href='methods.html'>chronological</a><br/>
+ &nbsp;&nbsp;<a target='mainFrame' href='methods-alphabetical.html'>alphabetical</a><br/>
+ &nbsp;&nbsp;<a target='mainFrame' href='methods-not-run.html'>not run (0)</a></td>
+@@ -20,9 +20,17 @@
+ <td><a target='mainFrame' href='reporter-output.html'>reporter output</a></td>
+ <td><a target='mainFrame' href='testng.xml.html'>testng.xml</a></td>
+ </tr></table>
+-<table width='100%' class='test-failed'>
++<table width='100%' class='test-passed'>
+ <tr><td>
+-<table style='width: 100%'><tr><td valign='top'>Find New Car Test (0/1/0)</td><td valign='top' align='right'>
++<table style='width: 100%'><tr><td valign='top'>Find Car Names and Car Prices (5/0/0)</td><td valign='top' align='right'>
++  <a href='Find Car Names and Car Prices.html' target='mainFrame'>Results</a>
++</td></tr></table>
++</td></tr><p/>
++</table>
++
++<table width='100%' class='test-passed'>
++<tr><td>
++<table style='width: 100%'><tr><td valign='top'>Find New Car Test (5/0/0)</td><td valign='top' align='right'>
+   <a href='Find New Car Test.html' target='mainFrame'>Results</a>
+ </td></tr></table>
+ </td></tr><p/>
+diff --git a/test-output/old/index.html b/test-output/old/index.html
+index d77d2db..8a871e8 100644
+--- a/test-output/old/index.html
++++ b/test-output/old/index.html
+@@ -4,6 +4,6 @@
+ </head><body>
+ <h2><p align='center'>Test results</p></h2>
+ <table border='1' width='100%' class='main-page'><tr><th>Suite</th><th>Passed</th><th>Failed</th><th>Skipped</th><th>testng.xml</th></tr>
+-<tr align='center' class='invocation-failed'><td><em>Total</em></td><td><em>0</em></td><td><em>1</em></td><td><em>0</em></td><td>&nbsp;</td></tr>
+-<tr align='center' class='invocation-failed'><td><a href='Page Object Model Framework/index.html'>Page Object Model Framework</a></td>
+-<td>0</td><td>1</td><td>0</td><td><a href='Page Object Model Framework/testng.xml.html'>Link</a></td></tr></table></body></html>
++<tr align='center' class='invocation-passed'><td><em>Total</em></td><td><em>10</em></td><td><em>0</em></td><td><em>0</em></td><td>&nbsp;</td></tr>
++<tr align='center' class='invocation-passed'><td><a href='Page Object Model Framework/index.html'>Page Object Model Framework</a></td>
++<td>10</td><td>0</td><td>0</td><td><a href='Page Object Model Framework/testng.xml.html'>Link</a></td></tr></table></body></html>
+diff --git a/test-output/testng-failed.xml b/test-output/testng-failed.xml
+index 6898882..eba9a72 100644
+--- a/test-output/testng-failed.xml
++++ b/test-output/testng-failed.xml
+@@ -1,14 +1,14 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+ <suite name="Failed suite [Page Object Model Framework]" guice-stage="DEVELOPMENT">
+-  <test thread-count="5" name="Find New Car Test(failed)">
++  <test thread-count="5" name="Find Car Names and Car Prices(failed)">
+     <classes>
+-      <class name="testcases.FindNewCarsTest">
++      <class name="testcases.CarNamesAndCarPricesTest">
+         <methods>
+-          <include name="findNewCars" invocation-numbers="0"/>
+           <include name="tearDown"/>
++          <include name="findNewCars"/>
+         </methods>
+-      </class> <!-- testcases.FindNewCarsTest -->
++      </class> <!-- testcases.CarNamesAndCarPricesTest -->
+     </classes>
+-  </test> <!-- Find New Car Test(failed) -->
++  </test> <!-- Find Car Names and Car Prices(failed) -->
+ </suite> <!-- Failed suite [Page Object Model Framework] -->
+diff --git a/test-output/testng-results.xml b/test-output/testng-results.xml
+index 5e982b6..0332574 100644
+--- a/test-output/testng-results.xml
++++ b/test-output/testng-results.xml
+@@ -1,13 +1,13 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+-<testng-results ignored="0" total="1" passed="0" failed="1" skipped="0">
++<testng-results ignored="0" total="10" passed="10" failed="0" skipped="0">
+   <reporter-output>
+   </reporter-output>
+-  <suite started-at="2024-12-21T14:01:10Z" name="Page Object Model Framework" finished-at="2024-12-21T14:01:26Z" duration-ms="15491">
++  <suite started-at="2024-12-25T12:32:44Z" name="Page Object Model Framework" finished-at="2024-12-25T12:37:13Z" duration-ms="268168">
+     <groups>
+     </groups>
+-    <test started-at="2024-12-21T14:01:10Z" name="Find New Car Test" finished-at="2024-12-21T14:01:26Z" duration-ms="15491">
++    <test started-at="2024-12-25T12:32:44Z" name="Find New Car Test" finished-at="2024-12-25T12:33:08Z" duration-ms="23392">
+       <class name="testcases.FindNewCarsTest">
+-        <test-method signature="findNewCars(java.lang.String, java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.FindNewCarsTest@1ef3efa8]" started-at="2024-12-21T14:01:11Z" name="findNewCars" data-provider="dp" finished-at="2024-12-21T14:01:26Z" duration-ms="15188" status="FAIL">
++        <test-method signature="findNewCars(java.lang.String, java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.FindNewCarsTest@47605f2f]" started-at="2024-12-25T12:32:45Z" name="findNewCars" data-provider="dp" finished-at="2024-12-25T12:32:49Z" duration-ms="4817" status="PASS">
+           <params>
+             <param index="0">
+               <value>
+@@ -30,81 +30,263 @@
+               </value>
+             </param>
+           </params>
+-          <exception class="org.openqa.selenium.NoSuchElementException">
+-            <message>
+-              <![CDATA[no such element: Unable to locate element: {"method":"xpath","selector":"//*[@id="root"]/div[2]/div/div/div[2]/section/header/h1"}
+-  (Session info: chrome=131.0.6778.205)
+-For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+-Build info: version: '4.13.0', revision: 'ba948ece5b*'
+-System info: os.name: 'Windows 11', os.arch: 'amd64', os.version: '10.0', java.version: '18'
+-Driver info: org.openqa.selenium.chrome.ChromeDriver
+-Command: [e33101bfd5632194ad0acca08224cfdc, findElement {using=xpath, value=//*[@id="root"]/div[2]/div/div/div[2]/section/header/h1}]
+-Capabilities {acceptInsecureCerts: false, browserName: chrome, browserVersion: 131.0.6778.205, chrome: {chromedriverVersion: 131.0.6778.204 (52183f9e99a..., userDataDir: C:\Users\TANYAF~1\AppData\L...}, fedcm:accounts: true, goog:chromeOptions: {debuggerAddress: localhost:54789}, networkConnectionEnabled: false, pageLoadStrategy: normal, platformName: windows, proxy: Proxy(), se:cdp: ws://localhost:54789/devtoo..., se:cdpVersion: 131.0.6778.205, setWindowRect: true, strictFileInteractability: false, timeouts: {implicit: 0, pageLoad: 300000, script: 30000}, unhandledPromptBehavior: dismiss and notify, webauthn:extension:credBlob: true, webauthn:extension:largeBlob: true, webauthn:extension:minPinLength: true, webauthn:extension:prf: true, webauthn:virtualAuthenticators: true}
+-Session ID: e33101bfd5632194ad0acca08224cfdc]]>
+-            </message>
+-            <full-stacktrace>
+-              <![CDATA[org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {"method":"xpath","selector":"//*[@id="root"]/div[2]/div/div/div[2]/section/header/h1"}
+-  (Session info: chrome=131.0.6778.205)
+-For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+-Build info: version: '4.13.0', revision: 'ba948ece5b*'
+-System info: os.name: 'Windows 11', os.arch: 'amd64', os.version: '10.0', java.version: '18'
+-Driver info: org.openqa.selenium.chrome.ChromeDriver
+-Command: [e33101bfd5632194ad0acca08224cfdc, findElement {using=xpath, value=//*[@id="root"]/div[2]/div/div/div[2]/section/header/h1}]
+-Capabilities {acceptInsecureCerts: false, browserName: chrome, browserVersion: 131.0.6778.205, chrome: {chromedriverVersion: 131.0.6778.204 (52183f9e99a..., userDataDir: C:\Users\TANYAF~1\AppData\L...}, fedcm:accounts: true, goog:chromeOptions: {debuggerAddress: localhost:54789}, networkConnectionEnabled: false, pageLoadStrategy: normal, platformName: windows, proxy: Proxy(), se:cdp: ws://localhost:54789/devtoo..., se:cdpVersion: 131.0.6778.205, setWindowRect: true, strictFileInteractability: false, timeouts: {implicit: 0, pageLoad: 300000, script: 30000}, unhandledPromptBehavior: dismiss and notify, webauthn:extension:credBlob: true, webauthn:extension:largeBlob: true, webauthn:extension:minPinLength: true, webauthn:extension:prf: true, webauthn:virtualAuthenticators: true}
+-Session ID: e33101bfd5632194ad0acca08224cfdc
+-at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(DirectConstructorHandleAccessor.java:67)
+-at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:499)
+-at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:483)
+-at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.createException(W3CHttpResponseCodec.java:200)
+-at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.decode(W3CHttpResponseCodec.java:133)
+-at org.openqa.selenium.remote.codec.w3c.W3CHttpResponseCodec.decode(W3CHttpResponseCodec.java:52)
+-at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:191)
+-at org.openqa.selenium.remote.service.DriverCommandExecutor.invokeExecute(DriverCommandExecutor.java:196)
+-at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:171)
+-at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:602)
+-at org.openqa.selenium.remote.ElementLocation$ElementFinder$2.findElement(ElementLocation.java:165)
+-at org.openqa.selenium.remote.ElementLocation.findElement(ElementLocation.java:59)
+-at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:359)
+-at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:353)
+-at org.openqa.selenium.support.pagefactory.DefaultElementLocator.findElement(DefaultElementLocator.java:68)
+-at org.openqa.selenium.support.pagefactory.internal.LocatingElementHandler.invoke(LocatingElementHandler.java:38)
+-at jdk.proxy2/jdk.proxy2.$Proxy16.getText(Unknown Source)
+-at Base.CarBasePage.getCarTitle(CarBasePage.java:28)
+-at testcases.FindNewCarsTest.findNewCars(FindNewCarsTest.java:41)
+-at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+-at java.base/java.lang.reflect.Method.invoke(Method.java:577)
+-at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:124)
+-at org.testng.internal.Invoker.invokeMethod(Invoker.java:583)
+-at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:719)
+-at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:989)
+-at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:125)
+-at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+-at org.testng.TestRunner.privateRun(TestRunner.java:648)
+-at org.testng.TestRunner.run(TestRunner.java:505)
+-at org.testng.SuiteRunner.runTest(SuiteRunner.java:455)
+-at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:450)
+-at org.testng.SuiteRunner.privateRun(SuiteRunner.java:415)
+-at org.testng.SuiteRunner.run(SuiteRunner.java:364)
+-at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+-at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:84)
+-at org.testng.TestNG.runSuitesSequentially(TestNG.java:1208)
+-at org.testng.TestNG.runSuitesLocally(TestNG.java:1137)
+-at org.testng.TestNG.runSuites(TestNG.java:1049)
+-at org.testng.TestNG.run(TestNG.java:1017)
+-at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:115)
+-at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:251)
+-at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:77)
+-]]>
+-            </full-stacktrace>
+-          </exception> <!-- org.openqa.selenium.NoSuchElementException -->
+           <reporter-output>
+           </reporter-output>
+         </test-method> <!-- findNewCars -->
+-        <test-method is-config="true" signature="tearDown()[pri:0, instance:testcases.FindNewCarsTest@1ef3efa8]" started-at="2024-12-21T14:01:26Z" name="tearDown" finished-at="2024-12-21T14:01:26Z" duration-ms="234" status="PASS">
++        <test-method is-config="true" signature="tearDown()[pri:0, instance:testcases.FindNewCarsTest@47605f2f]" started-at="2024-12-25T12:32:49Z" name="tearDown" finished-at="2024-12-25T12:32:50Z" duration-ms="182" status="PASS">
++          <reporter-output>
++          </reporter-output>
++        </test-method> <!-- tearDown -->
++        <test-method signature="findNewCars(java.lang.String, java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.FindNewCarsTest@47605f2f]" started-at="2024-12-25T12:32:50Z" name="findNewCars" data-provider="dp" finished-at="2024-12-25T12:32:53Z" duration-ms="3542" status="PASS">
++          <params>
++            <param index="0">
++              <value>
++                <![CDATA[chrome]]>
++              </value>
++            </param>
++            <param index="1">
++              <value>
++                <![CDATA[Y]]>
++              </value>
++            </param>
++            <param index="2">
++              <value>
++                <![CDATA[toyota]]>
++              </value>
++            </param>
++            <param index="3">
++              <value>
++                <![CDATA[Toyota Cars]]>
++              </value>
++            </param>
++          </params>
++          <reporter-output>
++          </reporter-output>
++        </test-method> <!-- findNewCars -->
++        <test-method is-config="true" signature="tearDown()[pri:0, instance:testcases.FindNewCarsTest@47605f2f]" started-at="2024-12-25T12:32:53Z" name="tearDown" finished-at="2024-12-25T12:32:53Z" duration-ms="222" status="PASS">
++          <reporter-output>
++          </reporter-output>
++        </test-method> <!-- tearDown -->
++        <test-method signature="findNewCars(java.lang.String, java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.FindNewCarsTest@47605f2f]" started-at="2024-12-25T12:32:53Z" name="findNewCars" data-provider="dp" finished-at="2024-12-25T12:32:58Z" duration-ms="5109" status="PASS">
++          <params>
++            <param index="0">
++              <value>
++                <![CDATA[chrome]]>
++              </value>
++            </param>
++            <param index="1">
++              <value>
++                <![CDATA[Y]]>
++              </value>
++            </param>
++            <param index="2">
++              <value>
++                <![CDATA[bmw]]>
++              </value>
++            </param>
++            <param index="3">
++              <value>
++                <![CDATA[BMW Cars]]>
++              </value>
++            </param>
++          </params>
++          <reporter-output>
++          </reporter-output>
++        </test-method> <!-- findNewCars -->
++        <test-method is-config="true" signature="tearDown()[pri:0, instance:testcases.FindNewCarsTest@47605f2f]" started-at="2024-12-25T12:32:58Z" name="tearDown" finished-at="2024-12-25T12:32:59Z" duration-ms="429" status="PASS">
++          <reporter-output>
++          </reporter-output>
++        </test-method> <!-- tearDown -->
++        <test-method signature="findNewCars(java.lang.String, java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.FindNewCarsTest@47605f2f]" started-at="2024-12-25T12:32:59Z" name="findNewCars" data-provider="dp" finished-at="2024-12-25T12:33:03Z" duration-ms="4592" status="PASS">
++          <params>
++            <param index="0">
++              <value>
++                <![CDATA[chrome]]>
++              </value>
++            </param>
++            <param index="1">
++              <value>
++                <![CDATA[Y]]>
++              </value>
++            </param>
++            <param index="2">
++              <value>
++                <![CDATA[hyundai]]>
++              </value>
++            </param>
++            <param index="3">
++              <value>
++                <![CDATA[Hyundai Cars]]>
++              </value>
++            </param>
++          </params>
++          <reporter-output>
++          </reporter-output>
++        </test-method> <!-- findNewCars -->
++        <test-method is-config="true" signature="tearDown()[pri:0, instance:testcases.FindNewCarsTest@47605f2f]" started-at="2024-12-25T12:33:03Z" name="tearDown" finished-at="2024-12-25T12:33:04Z" duration-ms="190" status="PASS">
++          <reporter-output>
++          </reporter-output>
++        </test-method> <!-- tearDown -->
++        <test-method signature="findNewCars(java.lang.String, java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.FindNewCarsTest@47605f2f]" started-at="2024-12-25T12:33:04Z" name="findNewCars" data-provider="dp" finished-at="2024-12-25T12:33:08Z" duration-ms="4063" status="PASS">
++          <params>
++            <param index="0">
++              <value>
++                <![CDATA[chrome]]>
++              </value>
++            </param>
++            <param index="1">
++              <value>
++                <![CDATA[Y]]>
++              </value>
++            </param>
++            <param index="2">
++              <value>
++                <![CDATA[audi]]>
++              </value>
++            </param>
++            <param index="3">
++              <value>
++                <![CDATA[Audi Cars]]>
++              </value>
++            </param>
++          </params>
++          <reporter-output>
++          </reporter-output>
++        </test-method> <!-- findNewCars -->
++        <test-method is-config="true" signature="tearDown()[pri:0, instance:testcases.FindNewCarsTest@47605f2f]" started-at="2024-12-25T12:33:08Z" name="tearDown" finished-at="2024-12-25T12:33:08Z" duration-ms="175" status="PASS">
+           <reporter-output>
+           </reporter-output>
+         </test-method> <!-- tearDown -->
+       </class> <!-- testcases.FindNewCarsTest -->
+     </test> <!-- Find New Car Test -->
++    <test started-at="2024-12-25T12:33:08Z" name="Find Car Names and Car Prices" finished-at="2024-12-25T12:37:13Z" duration-ms="244760">
++      <class name="testcases.CarNamesAndCarPricesTest">
++        <test-method signature="carNamesAndCarPricesTest(java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]" started-at="2024-12-25T12:33:08Z" name="carNamesAndCarPricesTest" data-provider="dp" finished-at="2024-12-25T12:33:12Z" duration-ms="4132" status="PASS">
++          <params>
++            <param index="0">
++              <value>
++                <![CDATA[chrome]]>
++              </value>
++            </param>
++            <param index="1">
++              <value>
++                <![CDATA[Y]]>
++              </value>
++            </param>
++            <param index="2">
++              <value>
++                <![CDATA[kia]]>
++              </value>
++            </param>
++          </params>
++          <reporter-output>
++          </reporter-output>
++        </test-method> <!-- carNamesAndCarPricesTest -->
++        <test-method signature="carNamesAndCarPricesTest(java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]" started-at="2024-12-25T12:33:12Z" name="carNamesAndCarPricesTest" data-provider="dp" finished-at="2024-12-25T12:33:18Z" duration-ms="6026" status="PASS">
++          <params>
++            <param index="0">
++              <value>
++                <![CDATA[chrome]]>
++              </value>
++            </param>
++            <param index="1">
++              <value>
++                <![CDATA[Y]]>
++              </value>
++            </param>
++            <param index="2">
++              <value>
++                <![CDATA[toyota]]>
++              </value>
++            </param>
++          </params>
++          <reporter-output>
++          </reporter-output>
++        </test-method> <!-- carNamesAndCarPricesTest -->
++        <test-method is-config="true" signature="tearDown()[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]" started-at="2024-12-25T12:33:12Z" name="tearDown" finished-at="2024-12-25T12:33:12Z" duration-ms="0" status="PASS">
++          <reporter-output>
++          </reporter-output>
++        </test-method> <!-- tearDown -->
++        <test-method signature="carNamesAndCarPricesTest(java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]" started-at="2024-12-25T12:33:18Z" name="carNamesAndCarPricesTest" data-provider="dp" finished-at="2024-12-25T12:33:23Z" duration-ms="5046" status="PASS">
++          <params>
++            <param index="0">
++              <value>
++                <![CDATA[chrome]]>
++              </value>
++            </param>
++            <param index="1">
++              <value>
++                <![CDATA[Y]]>
++              </value>
++            </param>
++            <param index="2">
++              <value>
++                <![CDATA[bmw]]>
++              </value>
++            </param>
++          </params>
++          <reporter-output>
++          </reporter-output>
++        </test-method> <!-- carNamesAndCarPricesTest -->
++        <test-method is-config="true" signature="tearDown()[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]" started-at="2024-12-25T12:33:18Z" name="tearDown" finished-at="2024-12-25T12:33:18Z" duration-ms="0" status="PASS">
++          <reporter-output>
++          </reporter-output>
++        </test-method> <!-- tearDown -->
++        <test-method signature="carNamesAndCarPricesTest(java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]" started-at="2024-12-25T12:33:23Z" name="carNamesAndCarPricesTest" data-provider="dp" finished-at="2024-12-25T12:33:30Z" duration-ms="7249" status="PASS">
++          <params>
++            <param index="0">
++              <value>
++                <![CDATA[chrome]]>
++              </value>
++            </param>
++            <param index="1">
++              <value>
++                <![CDATA[Y]]>
++              </value>
++            </param>
++            <param index="2">
++              <value>
++                <![CDATA[hyundai]]>
++              </value>
++            </param>
++          </params>
++          <reporter-output>
++          </reporter-output>
++        </test-method> <!-- carNamesAndCarPricesTest -->
++        <test-method is-config="true" signature="tearDown()[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]" started-at="2024-12-25T12:33:23Z" name="tearDown" finished-at="2024-12-25T12:33:23Z" duration-ms="0" status="PASS">
++          <reporter-output>
++          </reporter-output>
++        </test-method> <!-- tearDown -->
++        <test-method signature="carNamesAndCarPricesTest(java.lang.String, java.lang.String, java.lang.String)[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]" started-at="2024-12-25T12:33:30Z" name="carNamesAndCarPricesTest" data-provider="dp" finished-at="2024-12-25T12:37:13Z" duration-ms="222273" status="PASS">
++          <params>
++            <param index="0">
++              <value>
++                <![CDATA[chrome]]>
++              </value>
++            </param>
++            <param index="1">
++              <value>
++                <![CDATA[Y]]>
++              </value>
++            </param>
++            <param index="2">
++              <value>
++                <![CDATA[audi]]>
++              </value>
++            </param>
++          </params>
++          <reporter-output>
++          </reporter-output>
++        </test-method> <!-- carNamesAndCarPricesTest -->
++        <test-method is-config="true" signature="tearDown()[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]" started-at="2024-12-25T12:33:30Z" name="tearDown" finished-at="2024-12-25T12:33:30Z" duration-ms="0" status="PASS">
++          <reporter-output>
++          </reporter-output>
++        </test-method> <!-- tearDown -->
++        <test-method is-config="true" signature="tearDown()[pri:0, instance:testcases.CarNamesAndCarPricesTest@6bb75258]" started-at="2024-12-25T12:37:13Z" name="tearDown" finished-at="2024-12-25T12:37:13Z" duration-ms="1" status="PASS">
++          <reporter-output>
++          </reporter-output>
++        </test-method> <!-- tearDown -->
++      </class> <!-- testcases.CarNamesAndCarPricesTest -->
++    </test> <!-- Find Car Names and Car Prices -->
+   </suite> <!-- Page Object Model Framework -->
+ </testng-results>

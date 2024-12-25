@@ -1,7 +1,5 @@
-INFO    2024-12-21 19:31:11,099 [main] testcases.testProperties  - Test Execution started !!!
-INFO    2024-12-21 19:31:11,099 [main] testcases.testProperties  - Config properties file loaded
-INFO    2024-12-21 19:31:11,100 [main] testcases.testProperties  - OR properties file loaded
-INFO    2024-12-21 19:31:13,154 [main] testcases.testProperties  - Chrome browser launched
-INFO    2024-12-21 19:31:15,512 [main] testcases.testProperties  - Navigated to : https://www.carwale.com/
-INFO    2024-12-21 19:31:15,827 [main] testcases.testProperties  - DB Connection established
-INFO    2024-12-21 19:31:26,482 [main] testcases.testProperties  - Test Execution completed !!!
+INFO    2024-12-25 18:03:30,876 [main] testcases.testProperties  - Test Execution started !!!
+INFO    2024-12-25 18:03:30,877 [main] testcases.testProperties  - Config properties file loaded
+INFO    2024-12-25 18:03:30,877 [main] testcases.testProperties  - OR properties file loaded
+INFO    2024-12-25 18:03:32,741 [main] testcases.testProperties  - Chrome browser launched
+INFO    2024-12-25 18:03:34,648 [main] testcases.testProperties  - Navigated to : https://www.carwale.com/

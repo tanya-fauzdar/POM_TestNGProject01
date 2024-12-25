@@ -22,6 +22,7 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 
 public class BaseTest {
 
@@ -40,7 +41,7 @@ public class BaseTest {
 	 * bt.setUp("chrome"); }
 	 */
 	 
-
+	@BeforeMethod
 	public void setUp(String browser) {
 
 		PropertyConfigurator.configure("./src/test/resources/properties/log4j.properties");
@@ -101,17 +102,12 @@ public class BaseTest {
 
 		wait = new WebDriverWait(driver, Duration.ofSeconds(Integer.parseInt(config.getProperty("explicit.wait"))));
 
-		try {
-			DbManager.setMysqlDbConnection();
-			log.info("DB Connection established");
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
+		/*
+		 * try { DbManager.setMysqlDbConnection();
+		 * log.info("DB Connection established"); } catch (ClassNotFoundException e) {
+		 * // TODO Auto-generated catch block e.printStackTrace(); } catch (SQLException
+		 * e) { // TODO Auto-generated catch block e.printStackTrace(); }
+		 */
 	}
 
 	@AfterMethod

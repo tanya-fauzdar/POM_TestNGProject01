@@ -13,7 +13,7 @@ public class HyundaiCarPage extends BasePage{
 	
 	public String getTitle() {
 		
-		System.out.println("Inside the Hyundai Cars page");
+		log.info("Inside the Hyundai Cars page");
 		return carBase.getCarTitle();
 	}
 }
