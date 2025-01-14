@@ -1,35 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="Failed suite [Custom Listeners in TestNG]" guice-stage="DEVELOPMENT">
-  <listeners>
-    <listener class-name="CustomListeners.Listeners"/>
-  </listeners>
-  <test thread-count="5" name="Failure Test for testing Listeners(failed)">
-    <groups>
-      <run>
-        <include name="Regression"/>
-      </run>
-    </groups>
+<suite name="Failed suite [Default suite]" guice-stage="DEVELOPMENT">
+  <test thread-count="5" name="Default test(failed)">
     <classes>
-      <class name="CustomListeners.TestFailure">
+      <class name="rough.TestParamtersFromXML">
         <methods>
-          <include name="testFail"/>
+          <include name="getBrowser"/>
         </methods>
-      </class> <!-- CustomListeners.TestFailure -->
+      </class> <!-- rough.TestParamtersFromXML -->
     </classes>
-  </test> <!-- Failure Test for testing Listeners(failed) -->
-  <test thread-count="5" name="Regression test cases Test(failed)">
-    <groups>
-      <run>
-        <include name="Regression"/>
-      </run>
-    </groups>
-    <classes>
-      <class name="rough.TestCase03">
-        <methods>
-          <include name="validateTitle"/>
-        </methods>
-      </class> <!-- rough.TestCase03 -->
-    </classes>
-  </test> <!-- Regression test cases Test(failed) -->
-</suite> <!-- Failed suite [Custom Listeners in TestNG] -->
+  </test> <!-- Default test(failed) -->
+</suite> <!-- Failed suite [Default suite] -->
